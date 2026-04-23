@@ -197,10 +197,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
 <div class="shell">
   <div class="hdr">
     <div class="hdr-l">
-      <div class="logo">&#127807;</div>
+      <div class="logo">🌿</div>
       <div>
         <div class="hdr-title">Command Centre</div>
-        <div class="hdr-sub">Alex Godfrey &middot; Strategy &amp; Systems &middot; Natural State</div>
+        <div class="hdr-sub">Alex Godfrey · Strategy & Systems · Natural State</div>
       </div>
     </div>
     <div class="date-chip" id="date-display"></div>
@@ -208,19 +208,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
   <div class="metrics">
     <div class="metric"><div class="m-label">Unread emails</div><div class="m-val" id="m-unread">15</div><div class="m-sub">Inbox today</div></div>
     <div class="metric"><div class="m-label">Action required</div><div class="m-val" id="m-action">5</div><div class="m-sub">Direct asks from you</div></div>
-    <div class="metric"><div class="m-label">Meetings today</div><div class="m-val" id="m-mtgs">2</div><div class="m-sub">Directors&apos; @ 10 AM ET</div></div>
-    <div class="metric"><div class="m-label">Tasks due soon</div><div class="m-val">11</div><div class="m-sub">Next 3 days &middot; Airtable</div></div>
+    <div class="metric"><div class="m-label">Meetings today</div><div class="m-val" id="m-mtgs">2</div><div class="m-sub">Directors' @ 10 AM ET</div></div>
+    <div class="metric"><div class="m-label">Tasks due soon</div><div class="m-val">11</div><div class="m-sub">Next 3 days · Airtable</div></div>
   </div>
   <div class="panel intel-wrap">
     <div class="ph">
-      <div class="pt">&#129504; Intelligence briefing <span class="badge bf">AI analysed</span></div>
-      <button class="rbtn" onclick="refreshIntel()">&#8635; Refresh</button>
+      <div class="pt">🧠 Intelligence briefing <span class="badge bf">AI analysed</span></div>
+      <button class="rbtn" onclick="refreshIntel()">↻ Refresh</button>
     </div>
-    <div id="intel-body"><div class="i-load"><div class="i-spin"></div><div class="i-load-txt">Analysing emails &amp; Teams messages&hellip;</div></div></div>
+    <div id="intel-body"></div>
   </div>
   <div class="grid">
     <div class="panel">
-      <div class="ph"><div class="pt">&#128236; Inbox</div><button class="rbtn" onclick="refreshEmails()">&#8635; Refresh</button></div>
+      <div class="ph"><div class="pt">📬 Inbox</div><button class="rbtn" onclick="refreshEmails()">↻ Refresh</button></div>
       <div class="frow" id="efilt">
         <button class="fb active" onclick="setEF('all',this)">All</button>
         <button class="fb" onclick="setEF('action',this)">Action</button>
@@ -231,7 +231,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
       <div class="elist" id="elist"></div>
     </div>
     <div class="panel">
-      <div class="ph"><div class="pt">&#128197; Calendar <span class="badge ba">ET UTC&minus;4</span></div><button class="rbtn" onclick="refreshCal()">&#8635; Refresh</button></div>
+      <div class="ph"><div class="pt">📅 Calendar <span class="badge ba">ET UTC−4</span></div><button class="rbtn" onclick="refreshCal()">↻ Refresh</button></div>
       <div class="frow" id="mfilt">
         <button class="fb active" onclick="setMF('today',this)">Today</button>
         <button class="fb" onclick="setMF('tomorrow',this)">Tomorrow</button>
@@ -241,7 +241,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
       <div class="mlist" id="mlist"></div>
     </div>
     <div class="panel fw">
-      <div class="ph"><div class="pt">&#9997;&#65039; Draft assistant <span class="badge bf">Claude powered</span></div><button class="rbtn" onclick="clearDraft()">Clear</button></div>
+      <div class="ph"><div class="pt">✍️ Draft assistant <span class="badge bf">Claude powered</span></div><button class="rbtn" onclick="clearDraft()">Clear</button></div>
       <div class="darea">
         <div class="dctx" id="dctx">Select an email above to pre-fill context, or describe what you want to write below.</div>
         <div class="drow">
@@ -250,7 +250,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
             <select class="tsel" id="tsel">
               <option value="professional">Professional</option>
               <option value="concise">Concise</option>
-              <option value="warm">Warm &amp; collegial</option>
+              <option value="warm">Warm & collegial</option>
               <option value="strategic">Strategic / executive</option>
             </select>
             <button class="dbtn dbtn-pri" onclick="genDraft()">Generate draft</button>
@@ -259,17 +259,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
         </div>
         <div id="dout-wrap" style="display:none;"><div class="dout"><div class="dout-hdr"><span class="dout-lbl">Draft</span><button class="dcopy" onclick="copyDraft()">Copy</button></div><div class="dtext" id="dtext"></div></div></div>
       </div>
-      <div class="sbar"><span class="sdot"></span>Connected &middot; Microsoft 365 &middot; agodfrey@naturalstate.org &middot; Calendar ET (UTC&minus;4)</div>
+      <div class="sbar"><span class="sdot"></span>Connected · Microsoft 365 · agodfrey@naturalstate.org · Calendar ET (UTC−4)</div>
     </div>
     <div class="panel">
-      <div class="ph"><div class="pt">&#9989; My tasks <span class="badge bg">Airtable</span></div><span style="font-size:11px;color:rgba(255,255,255,0.55);">Due in 3 days</span></div>
+      <div class="ph"><div class="pt">✅ My tasks <span class="badge bg">Airtable</span></div><span style="font-size:11px;color:rgba(255,255,255,0.55);">Due in 3 days</span></div>
       <div class="tlist" id="tlist"></div>
     </div>
     <div class="panel">
-      <div class="ph"><div class="pt">&#128221; Quick notes</div><button class="rbtn" onclick="clearNotes()">Clear all</button></div>
+      <div class="ph"><div class="pt">📝 Quick notes</div><button class="rbtn" onclick="clearNotes()">Clear all</button></div>
       <div class="narea">
         <div class="nirow">
-          <input type="text" class="ninput" id="ninput" placeholder="Add a to-do or note&hellip;" onkeydown="if(event.key==='Enter')addNote()">
+          <input type="text" class="ninput" id="ninput" placeholder="Add a to-do or note…" onkeydown="if(event.key==='Enter')addNote()">
           <button class="nadd" onclick="addNote()">Add</button>
         </div>
         <div class="nlist" id="nlist"></div>
@@ -287,7 +287,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
     <input type="password" class="modal-input" id="token-input" placeholder="patz...">
     <div class="modal-hint">Get your token at <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a> — create one with <b>data.records:write</b> scope on the Natural State base.</div>
     <div class="modal-err" id="token-err">Please enter a valid token (starts with "pat")</div>
-    <button class="modal-btn" onclick="saveToken()">Save &amp; Continue</button>
+    <button class="modal-btn" onclick="saveToken()">Save & Continue</button>
   </div>
 </div>
 
@@ -365,17 +365,17 @@ const INTEL={
 };
 
 function renderIntel(d){
-  const aHTML=d.actions.map(a=>`<div class="iitem"><div class="inum red">${a.n}</div><div class="ibody"><div class="ititle">${a.link?`<a href="${a.link}" target="_blank" rel="noopener">${a.title}</a>`:a.title}<span class="itag ${a.tc}">${a.tag}</span>${a.teams?'<span class="itag t-teams">Teams</span>':''}</div><div class="imeta">${a.src} &middot; ${a.time}</div><div class="idesc">${a.desc}</div></div></div>`).join('');
+  const aHTML=d.actions.map(a=>`<div class="iitem"><div class="inum red">${a.n}</div><div class="ibody"><div class="ititle">${a.link?`<a href="${a.link}" target="_blank" rel="noopener">${a.title}</a>`:a.title}<span class="itag ${a.tc}">${a.tag}</span>${a.teams?'<span class="itag t-teams">Teams</span>':''}</div><div class="imeta">${a.src} · ${a.time}</div><div class="idesc">${a.desc}</div></div></div>`).join('');
   const pHTML=d.priorities.map((p,i)=>`<div class="i-pri-item"><div class="pnum">${i+1}</div><span>${p}</span></div>`).join('');
-  document.getElementById('intel-body').innerHTML=`<div class="intel-cols"><div class="intel-col"><div class="isec-hdr red">&#128308; Actions required from you &mdash; ${d.actions.length} items</div>${aHTML}</div><div class="intel-col" style="display:flex;flex-direction:column;"><div class="i-sum-hdr">&#128203; Summary of other messages</div><div class="i-sum-body"><div class="i-sum-txt">${d.summary}</div></div></div><div class="intel-col" style="display:flex;flex-direction:column;"><div class="i-sum-hdr">&#9889; Priority recommendation</div><div class="i-sum-body"><div class="i-pri-list">${pHTML}</div></div></div></div>`;
+  document.getElementById('intel-body').innerHTML=`<div class="intel-cols"><div class="intel-col"><div class="isec-hdr red">🔴 Actions required from you — ${d.actions.length} items</div>${aHTML}</div><div class="intel-col" style="display:flex;flex-direction:column;"><div class="i-sum-hdr">📋 Summary of other messages</div><div class="i-sum-body"><div class="i-sum-txt">${d.summary}</div></div></div><div class="intel-col" style="display:flex;flex-direction:column;"><div class="i-sum-hdr">⚡ Priority recommendation</div><div class="i-sum-body"><div class="i-pri-list">${pHTML}</div></div></div></div>`;
   document.getElementById('m-action').textContent=d.actions.length;
 }
 function loadIntel(){renderIntel(INTEL);}
 function refreshIntel(){
-  const btn=event.target;btn.textContent='&#8635; Fetching...';btn.style.pointerEvents='none';
-  document.getElementById('intel-body').innerHTML='<div class="i-load"><div class="i-spin"></div><div class="i-load-txt">Fetching emails &amp; Teams messages&hellip;</div></div>';
+  const btn=event.target;btn.textContent='↻ Fetching…';btn.style.pointerEvents='none';
+  document.getElementById('intel-body').innerHTML='<div class="i-load"><div class="i-spin"></div><div class="i-load-txt">Fetching emails & Teams messages…</div></div>';
   if(typeof sendPrompt==='function')sendPrompt('Please refresh my intelligence briefing — fetch my latest unread Outlook emails and Teams messages, identify any where I (Alex or Alexander) am directly asked to complete a task, provide a narrative summary of the other messages, and call window.updateIntel() with fresh data.');
-  setTimeout(()=>{btn.textContent='&#8635; Refresh';btn.style.pointerEvents='';},5000);
+  setTimeout(()=>{btn.textContent='↻ Refresh';btn.style.pointerEvents='';},5000);
 }
 window.updateIntel=function(d){try{renderIntel(typeof d==='string'?JSON.parse(d):d);}catch(e){console.error(e);}};
 
@@ -391,14 +391,14 @@ function renderEmails(){
 }
 function selE(id){
   selEmail=EMAILS.find(e=>e.id===id);
-  document.getElementById('dctx').innerHTML=`<strong>${selEmail.subject}</strong> &middot; ${selEmail.sender}<br><span style="margin-top:4px;display:block">${selEmail.body}</span>`;
+  document.getElementById('dctx').innerHTML=`<strong>${selEmail.subject}</strong> · ${selEmail.sender}<br><span style="margin-top:4px;display:block">${selEmail.body}</span>`;
   document.getElementById('dout-wrap').style.display='none';
   renderEmails();
 }
 function refreshEmails(){
-  const btn=event.target;btn.textContent='&#8635; Fetching...';btn.style.pointerEvents='none';
+  const btn=event.target;btn.textContent='↻ Fetching…';btn.style.pointerEvents='none';
   if(typeof sendPrompt==='function')sendPrompt('Please refresh my inbox panel in the dashboard.');
-  setTimeout(()=>{btn.textContent='&#8635; Refresh';btn.style.pointerEvents='';},5000);
+  setTimeout(()=>{btn.textContent='↻ Refresh';btn.style.pointerEvents='';},5000);
 }
 window.updateEmails=function(d){try{const a=typeof d==='string'?JSON.parse(d):d;EMAILS.length=0;a.forEach(e=>EMAILS.push(e));renderEmails();}catch(e){console.error(e);}};
 
@@ -419,13 +419,13 @@ function renderMtgs(){
     const allDays=dayMtgs.filter(m=>m.allDay);
     const timed=dayMtgs.filter(m=>!m.allDay);
     const allDayRow=allDays.length?`<div class="mitem ad" style="padding:6px 18px 7px;"><div class="mtime-col"><div class="mtime" style="font-size:10px;color:var(--text3);font-weight:500;">All day</div></div><div class="mdot" style="background:var(--text4);margin-top:3px;"></div><div class="mbody" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding-top:1px;">${allDays.map(m=>`<span style="font-size:11px;color:var(--text3);background:var(--dew);border:1px solid var(--border);border-radius:6px;padding:2px 8px;">${m.title}</span>`).join('')}</div></div>`:'';
-    return(showH?`<div class="dhdr">${DLABELS[day]||day}</div>`:'')+allDayRow+timed.map(m=>`<div class="mitem"><div class="mtime-col"><div class="mtime">${m.time}</div>${m.end?`<div class="mend">&#8594; ${m.end}</div>`:''}</div><div class="mdot" style="background:${m.color}"></div><div class="mbody"><div class="mtitle">${m.title}</div><div class="mdetail">${m.detail}</div>${m.work?`<div class="mactions"><button class="mbtn">Prep brief</button><button class="mbtn">Draft agenda</button></div>`:''}</div></div>`).join('');
+    return(showH?`<div class="dhdr">${DLABELS[day]||day}</div>`:'')+allDayRow+timed.map(m=>`<div class="mitem"><div class="mtime-col"><div class="mtime">${m.time}</div>${m.end?`<div class="mend">→ ${m.end}</div>`:''}</div><div class="mdot" style="background:${m.color}"></div><div class="mbody"><div class="mtitle">${m.title}</div><div class="mdetail">${m.detail}</div>${m.work?`<div class="mactions"><button class="mbtn">Prep brief</button><button class="mbtn">Draft agenda</button></div>`:''}</div></div>`).join('');
   }).join('');
 }
 function refreshCal(){
-  const btn=event.target;btn.textContent='&#8635; Fetching...';btn.style.pointerEvents='none';
+  const btn=event.target;btn.textContent='↻ Fetching…';btn.style.pointerEvents='none';
   if(typeof sendPrompt==='function')sendPrompt('Please refresh my calendar panel in the dashboard.');
-  setTimeout(()=>{btn.textContent='&#8635; Refresh';btn.style.pointerEvents='';},5000);
+  setTimeout(()=>{btn.textContent='↻ Refresh';btn.style.pointerEvents='';},5000);
 }
 window.updateCalendar=function(d){try{const a=typeof d==='string'?JSON.parse(d):d;MTGS.length=0;a.forEach(m=>MTGS.push(m));renderMtgs();}catch(e){console.error(e);}};
 
@@ -480,7 +480,7 @@ function todayISO(){return new Date().toISOString().split('T')[0];}
 function renderNotes(){
   const l=document.getElementById('nlist');
   if(!notes.length){l.innerHTML='<div class="nempty">No notes yet — add one above</div>';return;}
-  l.innerHTML=notes.map((n,i)=>`<div class="nitem"><input type="checkbox" class="ncheck" ${n.done?'checked':''} onchange="compNote(${i},this)"><span class="ntxt${n.done?' done':''}">${n.text}</span>${n.syncing?'<span style="font-size:10px;color:var(--text3);flex-shrink:0">Saving...</span>':''}${n.done&&n.airtableId?'<span style="font-size:10px;color:var(--canopy);flex-shrink:0">&#10003; AT</span>':''}${!n.syncing?`<button class="ndel" onclick="delNote(${i})">&#215;</button>`:''}</div>`).join('');
+  l.innerHTML=notes.map((n,i)=>`<div class="nitem"><input type="checkbox" class="ncheck" ${n.done?'checked':''} onchange="compNote(${i},this)"><span class="ntxt${n.done?' done':''}">${n.text}</span>${n.syncing?'<span style="font-size:10px;color:var(--text3);flex-shrink:0">Saving...</span>':''}${n.done&&n.airtableId?'<span style="font-size:10px;color:var(--canopy);flex-shrink:0">✓ AT</span>':''}${!n.syncing?`<button class="ndel" onclick="delNote(${i})">×</button>`:''}</div>`).join('');
 }
 
 function addNote(){
