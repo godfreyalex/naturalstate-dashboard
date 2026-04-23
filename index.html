@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Command Centre — NATURAL STATE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --forest:#1a3a2a;--canopy:#2d5a3d;--moss:#3d7a52;--fern:#5a9e6e;
+  --sage:#8bc4a0;--mist:#c8e6d4;--dew:#edf7f1;
+  --amber:#c17f2a;--amber-lt:#f5e6cc;
+  --rust:#b04a2a;--rust-lt:#f5e0d8;
+  --sky:#2a6b8a;--sky-lt:#daeef7;
+  --text1:#1a2a20;--text2:#3d5245;--text3:#7a9a84;--text4:#b0cdb8;
+  --border:rgba(45,90,61,0.13);--border-md:rgba(45,90,61,0.24);
+  --shadow:0 2px 12px rgba(26,58,42,0.07);
+  --r:10px;--rl:14px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);min-height:100vh;
+  background-image:radial-gradient(ellipse at 0% 0%,rgba(61,122,82,0.07) 0%,transparent 55%),
+  radial-gradient(ellipse at 100% 100%,rgba(26,58,42,0.05) 0%,transparent 50%);}
+.shell{max-width:1440px;margin:0 auto;padding:28px 36px;}
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;}
+.hdr-l{display:flex;align-items:center;gap:16px;}
+.logo{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--canopy),var(--moss));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 3px 10px rgba(45,90,61,0.28);}
+.hdr-title{font-family:'DM Serif Display',serif;font-size:25px;color:var(--forest);letter-spacing:-0.3px;line-height:1;}
+.hdr-sub{font-size:12px;color:var(--text3);margin-top:4px;}
+.date-chip{font-size:12px;color:var(--text2);font-weight:500;background:#fff;border:1px solid var(--border);border-radius:20px;padding:6px 14px;box-shadow:var(--shadow);}
+.badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;letter-spacing:.02em;}
+.bg{background:var(--mist);color:var(--canopy);}
+.ba{background:var(--amber-lt);color:var(--amber);}
+.bf{background:var(--canopy);color:var(--mist);}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.metric{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.metric::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--moss),var(--fern));}
+.m-label{font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.m-val{font-family:'DM Serif Display',serif;font-size:34px;color:var(--forest);line-height:1;}
+.m-sub{font-size:11px;color:var(--text3);margin-top:5px;}
+.panel{background:#fff;border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--shadow);}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,var(--forest) 0%,var(--canopy) 100%);}
+.pt{font-family:'DM Serif Display',serif;font-size:15px;color:#fff;display:flex;align-items:center;gap:8px;}
+.rbtn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.9);cursor:pointer;transition:all .15s;}
+.rbtn:hover{background:rgba(255,255,255,0.22);}
+.frow{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--dew);flex-wrap:wrap;}
+.fb{font-size:11px;font-weight:500;padding:4px 12px;border-radius:20px;border:1px solid var(--border-md);background:#fff;color:var(--text2);cursor:pointer;transition:all .12s;}
+.fb:hover{background:var(--mist);border-color:var(--fern);}
+.fb.active{background:var(--canopy);color:#fff;border-color:transparent;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.fw{grid-column:1/-1;}
+.intel-wrap{margin-bottom:14px;}
+.intel-cols{display:grid;grid-template-columns:1fr 1fr 290px;}
+.intel-col{border-right:1px solid var(--border);}
+.intel-col:last-child{border-right:none;}
+.isec-hdr{display:flex;align-items:center;gap:7px;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--dew);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
+.isec-hdr.red{color:var(--rust);}
+.iitem{display:flex;gap:11px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .1s;}
+.iitem:hover{background:var(--dew);}
+.iitem:last-child{border-bottom:none;}
+.inum{width:20px;height:20px;border-radius:50%;font-size:10px;font-weight:700;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.inum.red{background:var(--rust-lt);color:var(--rust);}
+.ibody{flex:1;min-width:0;}
+.ititle{font-size:12px;font-weight:600;color:var(--text1);margin-bottom:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ititle a{color:var(--text1);text-decoration:none;}
+.ititle a:hover{color:var(--canopy);text-decoration:underline;}
+.imeta{font-size:10px;color:var(--text3);margin-bottom:3px;}
+.idesc{font-size:11px;color:var(--text2);line-height:1.5;}
+.itag{font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;flex-shrink:0;text-transform:uppercase;letter-spacing:.04em;}
+.t-sign{background:var(--amber-lt);color:var(--amber);}
+.t-reply{background:var(--sky-lt);color:var(--sky);}
+.t-review{background:var(--mist);color:var(--canopy);}
+.t-teams{background:#e8eeff;color:#3b5bdb;}
+.i-sum-hdr{padding:10px 18px;border-bottom:1px solid var(--border);background:var(--dew);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--canopy);}
+.i-sum-body{padding:14px 18px;}
+.i-sum-txt{font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:12px;}
+.i-pri-list{display:flex;flex-direction:column;gap:7px;}
+.i-pri-item{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:var(--text2);line-height:1.4;}
+.pnum{width:17px;height:17px;border-radius:50%;background:linear-gradient(135deg,var(--canopy),var(--moss));color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.i-load{padding:36px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;}
+.i-spin{width:24px;height:24px;border:2px solid var(--mist);border-top-color:var(--moss);border-radius:50%;animation:spin .7s linear infinite;}
+.i-load-txt{font-size:13px;color:var(--text3);}
+@keyframes spin{to{transform:rotate(360deg)}}
+.elist{max-height:380px;overflow-y:auto;}
+.eitem{padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.eitem:hover{background:var(--dew);}
+.eitem.sel{background:rgba(61,122,82,0.06);}
+.etop{display:flex;align-items:center;gap:8px;margin-bottom:3px;}
+.esndr{font-size:13px;font-weight:600;color:var(--text1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.etime{font-size:11px;color:var(--text3);flex-shrink:0;}
+.esubj{font-size:12px;color:var(--text2);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.eprev{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.etags{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;}
+.etag{font-size:10px;padding:2px 7px;border-radius:7px;font-weight:500;}
+.et-action{background:var(--sky-lt);color:var(--sky);}
+.et-urgent{background:var(--rust-lt);color:var(--rust);}
+.et-fyi{background:var(--dew);color:var(--text3);border:1px solid var(--border);}
+.et-external{background:var(--amber-lt);color:var(--amber);}
+.udot{width:7px;height:7px;border-radius:50%;background:var(--moss);flex-shrink:0;}
+.rdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ph-dot{background:var(--rust);}
+.pm-dot{background:var(--amber);}
+.pl-dot{background:var(--text4);}
+.mlist{max-height:380px;overflow-y:auto;}
+.dhdr{font-size:10px;font-weight:700;color:var(--text3);padding:7px 18px 4px;text-transform:uppercase;letter-spacing:.07em;background:var(--dew);border-bottom:1px solid var(--border);}
+.mitem{display:flex;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border);align-items:flex-start;}
+.mitem.ad{opacity:.5;}
+.mtime-col{min-width:66px;text-align:right;flex-shrink:0;}
+.mtime{font-size:12px;font-weight:600;color:var(--text1);}
+.mend{font-size:10px;color:var(--text3);}
+.mdot{width:9px;height:9px;border-radius:50%;margin-top:4px;flex-shrink:0;}
+.mbody{flex:1;min-width:0;}
+.mtitle{font-size:13px;font-weight:600;color:var(--text1);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mdetail{font-size:11px;color:var(--text2);}
+.mactions{display:flex;gap:6px;margin-top:6px;}
+.mbtn{font-size:10px;border:1px solid var(--border-md);background:none;border-radius:var(--r);padding:3px 9px;cursor:pointer;color:var(--text2);transition:background .1s;}
+.mbtn:hover{background:var(--dew);}
+.darea{padding:18px;}
+.dctx{background:var(--dew);border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.6;border:1px solid var(--border);}
+.dctx strong{color:var(--forest);font-weight:600;}
+.drow{display:flex;gap:14px;align-items:flex-start;}
+.dinput{flex:1;border:1px solid var(--border-md);border-radius:var(--r);padding:11px 14px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text1);background:#fff;resize:vertical;min-height:80px;outline:none;transition:border-color .15s;}
+.dinput:focus{border-color:var(--moss);}
+.dctrls{display:flex;flex-direction:column;gap:8px;min-width:160px;}
+.tsel{font-size:12px;border:1px solid var(--border-md);border-radius:var(--r);padding:8px 10px;background:#fff;color:var(--text2);cursor:pointer;width:100%;font-family:inherit;}
+.dbtn{font-size:12px;padding:8px 16px;border-radius:var(--r);border:1px solid var(--border-md);background:none;cursor:pointer;color:var(--text2);width:100%;text-align:center;transition:background .12s;font-family:inherit;}
+.dbtn:hover{background:var(--dew);}
+.dbtn-pri{background:linear-gradient(135deg,var(--canopy),var(--moss));color:#fff;border-color:transparent;font-weight:600;}
+.dbtn-pri:hover{opacity:.88;}
+.dout{background:var(--dew);border-radius:var(--r);padding:14px 18px;margin-top:14px;border:1px solid var(--border);}
+.dout-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.dout-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.dcopy{font-size:11px;border:1px solid var(--border-md);background:none;border-radius:var(--r);padding:3px 10px;cursor:pointer;color:var(--text2);}
+.dtext{font-size:13px;color:var(--text1);line-height:1.75;white-space:pre-wrap;}
+.sbar{display:flex;align-items:center;gap:8px;padding:9px 18px;background:var(--dew);font-size:11px;color:var(--text3);border-top:1px solid var(--border);}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--moss);flex-shrink:0;}
+.tlist{max-height:300px;overflow-y:auto;}
+.titem{display:flex;align-items:flex-start;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border);transition:background .1s;}
+.titem:hover{background:var(--dew);}
+.tdue-col{min-width:64px;flex-shrink:0;text-align:right;}
+.tdue{font-size:11px;font-weight:600;}
+.tdue.ov{color:var(--rust);}
+.tdue.td{color:var(--amber);}
+.tdue.sn{color:var(--text2);}
+.tbody{flex:1;min-width:0;}
+.tname{font-size:12px;font-weight:600;color:var(--text1);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tmeta{font-size:10px;color:var(--text3);}
+.tstatus{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600;flex-shrink:0;align-self:center;}
+.s-ns{background:var(--dew);color:var(--text3);}
+.s-ip{background:var(--sky-lt);color:var(--sky);}
+.s-bl{background:var(--amber-lt);color:var(--amber);}
+.s-co{background:var(--mist);color:var(--canopy);}
+.narea{padding:14px 18px;display:flex;flex-direction:column;gap:10px;}
+.nirow{display:flex;gap:8px;}
+.ninput{flex:1;border:1px solid var(--border-md);border-radius:var(--r);padding:8px 12px;font-size:13px;font-family:inherit;color:var(--text1);background:#fff;outline:none;transition:border-color .15s;}
+.ninput:focus{border-color:var(--moss);}
+.nadd{font-size:12px;padding:8px 14px;border-radius:var(--r);border:none;background:linear-gradient(135deg,var(--canopy),var(--moss));color:#fff;cursor:pointer;font-weight:600;font-family:inherit;}
+.nlist{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;}
+.nitem{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:var(--dew);border-radius:var(--r);border:1px solid var(--border);}
+.ncheck{width:18px;height:18px;min-width:18px;cursor:pointer;flex-shrink:0;margin-top:1px;accent-color:var(--moss);}
+.ntxt{flex:1;font-size:13px;color:var(--text1);line-height:1.4;word-break:break-word;}
+.ntxt.done{text-decoration:line-through;color:var(--text3);}
+.ndel{font-size:14px;color:var(--text3);cursor:pointer;border:none;background:none;padding:0 2px;line-height:1;flex-shrink:0;}
+.ndel:hover{color:var(--rust);}
+.nempty{font-size:12px;color:var(--text3);text-align:center;padding:20px 0;}
+
+/* TOKEN SETUP MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,58,42,0.55);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal{background:#fff;border-radius:var(--rl);padding:32px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(26,58,42,0.2);}
+.modal-logo{font-size:36px;margin-bottom:16px;}
+.modal-title{font-family:'DM Serif Display',serif;font-size:22px;color:var(--forest);margin-bottom:8px;}
+.modal-sub{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:24px;}
+.modal-sub a{color:var(--canopy);}
+.modal-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:6px;}
+.modal-input{width:100%;border:1px solid var(--border-md);border-radius:var(--r);padding:10px 14px;font-size:13px;font-family:inherit;color:var(--text1);outline:none;transition:border-color .15s;margin-bottom:8px;}
+.modal-input:focus{border-color:var(--moss);}
+.modal-hint{font-size:11px;color:var(--text3);margin-bottom:20px;line-height:1.5;}
+.modal-btn{width:100%;padding:12px;border-radius:var(--r);border:none;background:linear-gradient(135deg,var(--canopy),var(--moss));color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.modal-btn:hover{opacity:.9;}
+.modal-err{font-size:12px;color:var(--rust);margin-bottom:12px;display:none;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--mist);border-radius:4px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.panel,.intel-wrap,.metrics .metric{animation:fadeUp .4s ease both;}
+.metrics .metric:nth-child(1){animation-delay:.05s}
+.metrics .metric:nth-child(2){animation-delay:.10s}
+.metrics .metric:nth-child(3){animation-delay:.15s}
+.metrics .metric:nth-child(4){animation-delay:.20s}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="hdr">
+    <div class="hdr-l">
+      <div class="logo">&#127807;</div>
+      <div>
+        <div class="hdr-title">Command Centre</div>
+        <div class="hdr-sub">Alex Godfrey &middot; Strategy &amp; Systems &middot; Natural State</div>
+      </div>
+    </div>
+    <div class="date-chip" id="date-display"></div>
+  </div>
+  <div class="metrics">
+    <div class="metric"><div class="m-label">Unread emails</div><div class="m-val" id="m-unread">15</div><div class="m-sub">Inbox today</div></div>
+    <div class="metric"><div class="m-label">Action required</div><div class="m-val" id="m-action">5</div><div class="m-sub">Direct asks from you</div></div>
+    <div class="metric"><div class="m-label">Meetings today</div><div class="m-val" id="m-mtgs">2</div><div class="m-sub">Directors&apos; @ 10 AM ET</div></div>
+    <div class="metric"><div class="m-label">Tasks due soon</div><div class="m-val">11</div><div class="m-sub">Next 3 days &middot; Airtable</div></div>
+  </div>
+  <div class="panel intel-wrap">
+    <div class="ph">
+      <div class="pt">&#129504; Intelligence briefing <span class="badge bf">AI analysed</span></div>
+      <button class="rbtn" onclick="refreshIntel()">&#8635; Refresh</button>
+    </div>
+    <div id="intel-body"><div class="i-load"><div class="i-spin"></div><div class="i-load-txt">Analysing emails &amp; Teams messages&hellip;</div></div></div>
+  </div>
+  <div class="grid">
+    <div class="panel">
+      <div class="ph"><div class="pt">&#128236; Inbox</div><button class="rbtn" onclick="refreshEmails()">&#8635; Refresh</button></div>
+      <div class="frow" id="efilt">
+        <button class="fb active" onclick="setEF('all',this)">All</button>
+        <button class="fb" onclick="setEF('action',this)">Action</button>
+        <button class="fb" onclick="setEF('unread',this)">Unread</button>
+        <button class="fb" onclick="setEF('external',this)">External</button>
+        <button class="fb" onclick="setEF('fyi',this)">FYI</button>
+      </div>
+      <div class="elist" id="elist"></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="pt">&#128197; Calendar <span class="badge ba">ET UTC&minus;4</span></div><button class="rbtn" onclick="refreshCal()">&#8635; Refresh</button></div>
+      <div class="frow" id="mfilt">
+        <button class="fb active" onclick="setMF('today',this)">Today</button>
+        <button class="fb" onclick="setMF('tomorrow',this)">Tomorrow</button>
+        <button class="fb" onclick="setMF('week',this)">This week</button>
+        <button class="fb" onclick="setMF('work',this)">Work only</button>
+      </div>
+      <div class="mlist" id="mlist"></div>
+    </div>
+    <div class="panel fw">
+      <div class="ph"><div class="pt">&#9997;&#65039; Draft assistant <span class="badge bf">Claude powered</span></div><button class="rbtn" onclick="clearDraft()">Clear</button></div>
+      <div class="darea">
+        <div class="dctx" id="dctx">Select an email above to pre-fill context, or describe what you want to write below.</div>
+        <div class="drow">
+          <textarea class="dinput" id="dinput" placeholder="e.g. 'Reply to LeAnn confirming USD' or 'Follow up on headphone procurement issue'"></textarea>
+          <div class="dctrls">
+            <select class="tsel" id="tsel">
+              <option value="professional">Professional</option>
+              <option value="concise">Concise</option>
+              <option value="warm">Warm &amp; collegial</option>
+              <option value="strategic">Strategic / executive</option>
+            </select>
+            <button class="dbtn dbtn-pri" onclick="genDraft()">Generate draft</button>
+            <button class="dbtn" onclick="copyDraft()">Copy draft</button>
+          </div>
+        </div>
+        <div id="dout-wrap" style="display:none;"><div class="dout"><div class="dout-hdr"><span class="dout-lbl">Draft</span><button class="dcopy" onclick="copyDraft()">Copy</button></div><div class="dtext" id="dtext"></div></div></div>
+      </div>
+      <div class="sbar"><span class="sdot"></span>Connected &middot; Microsoft 365 &middot; agodfrey@naturalstate.org &middot; Calendar ET (UTC&minus;4)</div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="pt">&#9989; My tasks <span class="badge bg">Airtable</span></div><span style="font-size:11px;color:rgba(255,255,255,0.55);">Due in 3 days</span></div>
+      <div class="tlist" id="tlist"></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="pt">&#128221; Quick notes</div><button class="rbtn" onclick="clearNotes()">Clear all</button></div>
+      <div class="narea">
+        <div class="nirow">
+          <input type="text" class="ninput" id="ninput" placeholder="Add a to-do or note&hellip;" onkeydown="if(event.key==='Enter')addNote()">
+          <button class="nadd" onclick="addNote()">Add</button>
+        </div>
+        <div class="nlist" id="nlist"></div>
+      </div>
+    </div>
+  </div>
+
+<!-- AIRTABLE TOKEN SETUP MODAL -->
+<div class="modal-overlay" id="token-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-logo">🌿</div>
+    <div class="modal-title">Welcome to your Command Centre</div>
+    <div class="modal-sub">To enable Quick Notes → Airtable sync, enter your Airtable Personal Access Token below. It will be stored only in your browser — never in the file or on any server.</div>
+    <div class="modal-label">Airtable Personal Access Token</div>
+    <input type="password" class="modal-input" id="token-input" placeholder="patz...">
+    <div class="modal-hint">Get your token at <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a> — create one with <b>data.records:write</b> scope on the Natural State base.</div>
+    <div class="modal-err" id="token-err">Please enter a valid token (starts with "pat")</div>
+    <button class="modal-btn" onclick="saveToken()">Save &amp; Continue</button>
+  </div>
+</div>
+
+</div>
+<script>
+let ATAT=localStorage.getItem('ns_airtable_token')||'';
+const AB='apppzlM57WDc0Bz0e',ATBL='tblDr0WS1H4ILRGoj',AU='usrHTuwYUhF5SHq0I';
+const AE='godfreyalex@hotmail.com',AN='Alex Godfrey',AD='recwS4WBDUM1kzBNh';
+
+let EMAILS=[
+  {id:1,sender:'HelloSign',senderEmail:'noreply@mail.hellosign.com',subject:'Reminder: Dimov Audit Engagement Letter',preview:'ACTION REQUESTED — awaiting your signature',time:'7:03 AM',tags:['action','urgent'],priority:'high',unread:true,internal:false,body:'Your signature is required on the Engagement Letter for Dimov Audit. A reminder has already been sent. This is blocking the audit process.'},
+  {id:2,sender:'LeAnn Mullis (Ledgr)',senderEmail:'lmullis@getledgr.co',subject:'Re: Bill.com invoices',preview:'Is this paid in USD for the $3,871.00?',time:'9:35 PM',tags:['action','external'],priority:'high',unread:true,internal:false,body:'LeAnn needs you to confirm the $3,871.00 invoice should be processed in USD before she can enter it.'},
+  {id:3,sender:'LeAnn Mullis (Ledgr)',senderEmail:'lmullis@getledgr.co',subject:'March 2026 Reports',preview:'Several transactions in uncategorized expense',time:'Apr 17',tags:['action','external'],priority:'high',unread:true,internal:false,body:'March reports attached. LeAnn asking who placed transactions in the uncategorized expense category.'},
+  {id:4,sender:'Jonathan Baillie',senderEmail:'jbaillie@naturalstate.org',subject:'FW: CNE Procurement - April 22nd',preview:'Do we have budget and did we sign this off?',time:'9:55 AM',tags:['action'],priority:'med',unread:false,internal:true,body:"Jonathan forwarded a procurement request for CNE network installation. Direct question: 'Do we have budget and did we sign this off?'"},
+  {id:5,sender:'Jonathan Baillie',senderEmail:'jbaillie@naturalstate.org',subject:'Re: Field gear approval',preview:'I approve',time:'10:07 AM',tags:['fyi'],priority:'low',unread:true,internal:true,body:"Jonathan approved field gear. CC'd for visibility only."},
+  {id:6,sender:'Heidi Hawkins (UCT)',senderEmail:'heidi.hawkins@uct.ac.za',subject:'Re: soil spectroscopy',preview:'Student thesis about to be submitted',time:'Apr 22',tags:['fyi'],priority:'low',unread:true,internal:false,body:'UCT soil spectroscopy update. Student thesis near submission, Natural State acknowledged.'},
+  {id:7,sender:'D. Green (Ledgr)',senderEmail:'dgreen@getledgr.co',subject:'Natural State: 2026 Subscription Update',preview:'Important update regarding your subscription',time:'Apr 17',tags:['fyi','external'],priority:'low',unread:true,internal:false,body:'Ledgr notifying of a subscription cost increase.'},
+];
+
+const EXCLUDE_CATS=['Personal','Gym','EMT','LNHARS'];
+function isExcluded(m){return EXCLUDE_CATS.some(c=>m.cat===c);}
+
+let MTGS=[
+  {time:'All day',end:'',title:'Matt Rogan leave',detail:'Thu-Fri',color:'#7a9a84',work:false,allDay:true,day:'today',cat:''},
+  {time:'All day',end:'',title:'Peter Matee leave',detail:'Thu-Fri',color:'#7a9a84',work:false,allDay:true,day:'today',cat:''},
+  {time:'6:30 AM',end:'7:15 AM',title:'F45 Flemington',detail:'Docklands',color:'#5a9e6e',work:false,allDay:false,day:'today',cat:'Gym'},
+  {time:'10:00 AM',end:'11:00 AM',title:"Directors' Meeting",detail:'Jonathan Baillie + 6 · Teams',color:'#b04a2a',work:true,allDay:false,day:'today',cat:''},
+  {time:'1:00 PM',end:'2:00 PM',title:'Walk Rosey',detail:'Personal',color:'#5a9e6e',work:false,allDay:false,day:'today',cat:'Personal'},
+  {time:'All day',end:'',title:'EMT Chapter 32',detail:'Study',color:'#7a9a84',work:false,allDay:true,day:'fri',cat:'EMT'},
+  {time:'7:30 AM',end:'8:15 AM',title:'F45 Wingman',detail:'Gym',color:'#5a9e6e',work:false,allDay:false,day:'fri',cat:'Gym'},
+  {time:'8:30 AM',end:'9:00 AM',title:'Airtable / Conference Integration',detail:'Kristina Musili · Teams',color:'#2d5a3d',work:true,allDay:false,day:'fri',cat:''},
+  {time:'8:00 AM',end:'9:00 AM',title:'F45 NOHO',detail:'Gym',color:'#5a9e6e',work:false,allDay:false,day:'sat',cat:'Gym'},
+  {time:'10:00 AM',end:'6:00 PM',title:'NYC Puma Film',detail:'Personal',color:'#7a9a84',work:false,allDay:false,day:'sat',cat:'Personal'},
+  {time:'All day',end:'',title:'EMT Chapter 33',detail:'Study',color:'#7a9a84',work:false,allDay:true,day:'mon',cat:'EMT'},
+  {time:'8:00 AM',end:'9:00 AM',title:'Operations Team Weekly',detail:'Kristina, Rakhee + 5 · Teams',color:'#2d5a3d',work:true,allDay:false,day:'mon',cat:''},
+  {time:'All day',end:'',title:'EMT Chapter 34',detail:'Study',color:'#7a9a84',work:false,allDay:true,day:'tue',cat:'EMT'},
+  {time:'10:00 AM',end:'10:15 AM',title:"Directors' Agenda Reminder",detail:'Update Loop & Airtable milestones',color:'#c17f2a',work:true,allDay:false,day:'tue',cat:''},
+  {time:'6:00 PM',end:'10:00 PM',title:'LNHARS',detail:'EMS shift',color:'#b04a2a',work:false,allDay:false,day:'tue',cat:'LNHARS'},
+  {time:'10:00 AM',end:'11:00 AM',title:"Directors' Meeting",detail:'Jonathan Baillie + 6 · Teams',color:'#b04a2a',work:true,allDay:false,day:'thu',cat:''},
+  {time:'1:00 PM',end:'2:00 PM',title:'Walk Rosey',detail:'Personal',color:'#5a9e6e',work:false,allDay:false,day:'thu',cat:'Personal'},
+];
+
+const DLABELS={today:'Today — Thu 23 Apr',fri:'Fri 24 Apr',sat:'Sat 25 Apr',mon:'Mon 27 Apr',tue:'Tue 28 Apr',thu:'Thu 30 Apr'};
+
+const TASKS=[
+  {name:'Review and sign-off meeting with Rakhee',due:'2026-04-22',status:'NOT STARTED',prog:''},
+  {name:'Update Bank details with new address',due:'2026-04-22',status:'BLOCKED',prog:'OP-A. GENERAL OPERATIONS'},
+  {name:'Evaluate solutions based on needs assessment',due:'2026-04-23',status:'BLOCKED',prog:''},
+  {name:'Update IRS details with new address',due:'2026-04-23',status:'NOT STARTED',prog:'OP-A. GENERAL OPERATIONS'},
+  {name:"Review SYSRE's consultancy management setup",due:'2026-04-24',status:'NOT STARTED',prog:''},
+  {name:'Cancel LinkedIn payment — Dir of Finance etc.',due:'2026-04-24',status:'IN PROGRESS',prog:''},
+  {name:'Get quotes from other auditing companies',due:'2026-04-24',status:'BLOCKED',prog:''},
+  {name:'Finalise blueprint document (v1.0)',due:'2026-04-24',status:'NOT STARTED',prog:''},
+  {name:'Update Bizfilings details with new address',due:'2026-04-24',status:'NOT STARTED',prog:'OP-A. GENERAL OPERATIONS'},
+  {name:'Confirm procurement process flow',due:'2026-04-24',status:'NOT STARTED',prog:'OP-B. HUMAN RESOURCES'},
+  {name:'Finalise NS US and NS Kenya formal agreement',due:'2026-04-24',status:'NOT STARTED',prog:''},
+];
+
+const INTEL={
+  actions:[
+    {n:1,title:'Sign Dimov Audit Engagement Letter',src:'Email · HelloSign',time:'Apr 20',desc:'Your signature is required and a reminder has already been sent. This is blocking the audit process.',tag:'sign',tc:'t-sign',link:'https://outlook.office365.com/owa/?ItemID=AAMkADI1NTYzOTJhLTVjODctNGRlMC1hNzhjLTM5NjU3NDIxODhiYQBGAAAAAADp6IJ3lP2CSoCyaF1T4hNJBwD0BlD0kqUVSIrEt6p7bNxcAAAAAAEMAAD0BlD0kqUVSIrEt6p7bNxcAAJ5G7YVAAA%3D&exvsurl=1&viewmodel=ReadMessageItem',teams:false},
+    {n:2,title:'Confirm USD for $3,871 Bill.com invoice',src:'Email · LeAnn Mullis (Ledgr)',time:'Apr 23',desc:'LeAnn cannot enter the invoice until you confirm it should be processed in USD.',tag:'reply',tc:'t-reply',link:'https://outlook.office365.com/owa/?ItemID=AAMkADI1NTYzOTJhLTVjODctNGRlMC1hNzhjLTM5NjU3NDIxODhiYQBGAAAAAADp6IJ3lP2CSoCyaF1T4hNJBwD0BlD0kqUVSIrEt6p7bNxcAAAAAAEMAAD0BlD0kqUVSIrEt6p7bNxcAAJ7QhkEAAA%3D&exvsurl=1&viewmodel=ReadMessageItem',teams:false},
+    {n:3,title:'Identify uncategorized March expenses',src:'Email · LeAnn Mullis (Ledgr)',time:'Apr 17',desc:'March reports attached — LeAnn is asking who placed transactions in the uncategorized category.',tag:'review',tc:'t-review',link:'',teams:false},
+    {n:4,title:'Set up Claude account for Kristina',src:'Teams · Kristina Musili',time:'Today',desc:'"Rakhee told me to check with you if I can get a Claude account set-up?" — direct ask by name.',tag:'reply',tc:'t-reply',link:'',teams:true},
+    {n:5,title:'Share Tier 1 policy links with all staff',src:'Teams · Seleina Shurake',time:'Today',desc:'"Hi Alexander, have you shared links with all staff" — JB has signed off on Tier 1 policies.',tag:'reply',tc:'t-reply',link:'',teams:true},
+  ],
+  summary:'Today\'s comms centre on several active threads. <b>Financially</b>, Ledgr\'s LeAnn needs two things from you: USD confirmation on a Bill.com invoice and identification of uncategorized March expenses. The Dimov Audit engagement letter remains unsigned with a second reminder sent.<br><br><b>On Teams</b>, a detailed conversation with Rakhee covers procurement process gaps (headphone approvals miscommunication), website job posting ownership, and broader concerns about purchases made without approvals. A separate thread with Seleina covers Tier 1 policy commitments JB has signed off on. Irene Kago is actively working on Bill.com reconciliation.<br><br><b>FYI:</b> Jonathan approved field gear and CNE network payments. UCT soil spectroscopy collaboration progressing well. Ledgr subscription price increase notice received.',
+  priorities:[
+    'Sign Dimov Audit letter — blocking the audit',
+    'Reply to LeAnn: confirm USD for $3,871 invoice',
+    'Set up Claude for Kristina (Rakhee asked)',
+    'Share Tier 1 policy links with all staff (Seleina)',
+    'Review March financials and uncategorized expenses',
+  ]
+};
+
+function renderIntel(d){
+  const aHTML=d.actions.map(a=>`<div class="iitem"><div class="inum red">${a.n}</div><div class="ibody"><div class="ititle">${a.link?`<a href="${a.link}" target="_blank" rel="noopener">${a.title}</a>`:a.title}<span class="itag ${a.tc}">${a.tag}</span>${a.teams?'<span class="itag t-teams">Teams</span>':''}</div><div class="imeta">${a.src} &middot; ${a.time}</div><div class="idesc">${a.desc}</div></div></div>`).join('');
+  const pHTML=d.priorities.map((p,i)=>`<div class="i-pri-item"><div class="pnum">${i+1}</div><span>${p}</span></div>`).join('');
+  document.getElementById('intel-body').innerHTML=`<div class="intel-cols"><div class="intel-col"><div class="isec-hdr red">&#128308; Actions required from you &mdash; ${d.actions.length} items</div>${aHTML}</div><div class="intel-col" style="display:flex;flex-direction:column;"><div class="i-sum-hdr">&#128203; Summary of other messages</div><div class="i-sum-body"><div class="i-sum-txt">${d.summary}</div></div></div><div class="intel-col" style="display:flex;flex-direction:column;"><div class="i-sum-hdr">&#9889; Priority recommendation</div><div class="i-sum-body"><div class="i-pri-list">${pHTML}</div></div></div></div>`;
+  document.getElementById('m-action').textContent=d.actions.length;
+}
+function loadIntel(){renderIntel(INTEL);}
+function refreshIntel(){
+  const btn=event.target;btn.textContent='&#8635; Fetching...';btn.style.pointerEvents='none';
+  document.getElementById('intel-body').innerHTML='<div class="i-load"><div class="i-spin"></div><div class="i-load-txt">Fetching emails &amp; Teams messages&hellip;</div></div>';
+  if(typeof sendPrompt==='function')sendPrompt('Please refresh my intelligence briefing — fetch my latest unread Outlook emails and Teams messages, identify any where I (Alex or Alexander) am directly asked to complete a task, provide a narrative summary of the other messages, and call window.updateIntel() with fresh data.');
+  setTimeout(()=>{btn.textContent='&#8635; Refresh';btn.style.pointerEvents='';},5000);
+}
+window.updateIntel=function(d){try{renderIntel(typeof d==='string'?JSON.parse(d):d);}catch(e){console.error(e);}};
+
+let selEmail=null,ef='all';
+function setEF(f,btn){ef=f;document.querySelectorAll('#efilt .fb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderEmails();}
+function renderEmails(){
+  let emails=EMAILS;
+  if(ef==='action')emails=emails.filter(e=>e.tags.includes('action'));
+  else if(ef==='unread')emails=emails.filter(e=>e.unread);
+  else if(ef==='external')emails=emails.filter(e=>!e.internal);
+  else if(ef==='fyi')emails=emails.filter(e=>e.tags.includes('fyi')&&!e.tags.includes('action'));
+  document.getElementById('elist').innerHTML=emails.map(e=>`<div class="eitem${selEmail&&selEmail.id===e.id?' sel':''}" onclick="selE(${e.id})"><div class="etop"><span class="${e.unread?'udot':'rdot'}"></span><span class="pdot ${e.priority==='high'?'ph-dot':e.priority==='med'?'pm-dot':'pl-dot'}"></span><span class="esndr">${e.sender}</span><span class="etime">${e.time}</span></div><div class="esubj">${e.subject}</div><div class="eprev">${e.preview}</div><div class="etags">${e.tags.map(t=>`<span class="etag et-${t}">${t==='fyi'?'FYI':t}</span>`).join('')}</div></div>`).join('');
+}
+function selE(id){
+  selEmail=EMAILS.find(e=>e.id===id);
+  document.getElementById('dctx').innerHTML=`<strong>${selEmail.subject}</strong> &middot; ${selEmail.sender}<br><span style="margin-top:4px;display:block">${selEmail.body}</span>`;
+  document.getElementById('dout-wrap').style.display='none';
+  renderEmails();
+}
+function refreshEmails(){
+  const btn=event.target;btn.textContent='&#8635; Fetching...';btn.style.pointerEvents='none';
+  if(typeof sendPrompt==='function')sendPrompt('Please refresh my inbox panel in the dashboard.');
+  setTimeout(()=>{btn.textContent='&#8635; Refresh';btn.style.pointerEvents='';},5000);
+}
+window.updateEmails=function(d){try{const a=typeof d==='string'?JSON.parse(d):d;EMAILS.length=0;a.forEach(e=>EMAILS.push(e));renderEmails();}catch(e){console.error(e);}};
+
+let mf='today';
+function setMF(f,btn){mf=f;document.querySelectorAll('#mfilt .fb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderMtgs();}
+function renderMtgs(){
+  let mtgs;
+  if(mf==='today')mtgs=MTGS.filter(m=>m.day==='today'&&!isExcluded(m));
+  else if(mf==='tomorrow')mtgs=MTGS.filter(m=>m.day==='fri'&&!isExcluded(m));
+  else if(mf==='work')mtgs=MTGS.filter(m=>m.work&&!isExcluded(m));
+  else mtgs=MTGS.filter(m=>!isExcluded(m));
+  const days=[...new Set(mtgs.map(m=>m.day))];
+  const showH=mf!=='today'&&mf!=='tomorrow';
+  const todayWork=MTGS.filter(m=>m.day==='today'&&!m.allDay&&!isExcluded(m));
+  document.getElementById('m-mtgs').textContent=todayWork.length;
+  document.getElementById('mlist').innerHTML=days.map(day=>{
+    const dayMtgs=mtgs.filter(m=>m.day===day);
+    const allDays=dayMtgs.filter(m=>m.allDay);
+    const timed=dayMtgs.filter(m=>!m.allDay);
+    const allDayRow=allDays.length?`<div class="mitem ad" style="padding:6px 18px 7px;"><div class="mtime-col"><div class="mtime" style="font-size:10px;color:var(--text3);font-weight:500;">All day</div></div><div class="mdot" style="background:var(--text4);margin-top:3px;"></div><div class="mbody" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding-top:1px;">${allDays.map(m=>`<span style="font-size:11px;color:var(--text3);background:var(--dew);border:1px solid var(--border);border-radius:6px;padding:2px 8px;">${m.title}</span>`).join('')}</div></div>`:'';
+    return(showH?`<div class="dhdr">${DLABELS[day]||day}</div>`:'')+allDayRow+timed.map(m=>`<div class="mitem"><div class="mtime-col"><div class="mtime">${m.time}</div>${m.end?`<div class="mend">&#8594; ${m.end}</div>`:''}</div><div class="mdot" style="background:${m.color}"></div><div class="mbody"><div class="mtitle">${m.title}</div><div class="mdetail">${m.detail}</div>${m.work?`<div class="mactions"><button class="mbtn">Prep brief</button><button class="mbtn">Draft agenda</button></div>`:''}</div></div>`).join('');
+  }).join('');
+}
+function refreshCal(){
+  const btn=event.target;btn.textContent='&#8635; Fetching...';btn.style.pointerEvents='none';
+  if(typeof sendPrompt==='function')sendPrompt('Please refresh my calendar panel in the dashboard.');
+  setTimeout(()=>{btn.textContent='&#8635; Refresh';btn.style.pointerEvents='';},5000);
+}
+window.updateCalendar=function(d){try{const a=typeof d==='string'?JSON.parse(d):d;MTGS.length=0;a.forEach(m=>MTGS.push(m));renderMtgs();}catch(e){console.error(e);}};
+
+async function genDraft(){
+  const inst=document.getElementById('dinput').value.trim();
+  const tone=document.getElementById('tsel').value;
+  const e=selEmail;
+  const wrap=document.getElementById('dout-wrap');
+  const tel=document.getElementById('dtext');
+  const prompt=e?`Professional email assistant for Alex Godfrey, Strategy & Systems at Natural State (environmental NGO). Tone: ${tone}. Email from ${e.sender} (${e.senderEmail}), Subject: "${e.subject}". Context: ${e.body}. Instruction: ${inst||'Write a professional reply'}. Body only, no subject.`:`Professional email assistant. Tone: ${tone}. Write: "${inst}". Body only, no subject.`;
+  wrap.style.display='block';tel.textContent='Drafting...';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    tel.textContent=data.content?.[0]?.text||'Could not generate draft.';
+  }catch(err){tel.textContent='Error generating draft. Please try again.';}
+}
+function clearDraft(){
+  selEmail=null;
+  document.getElementById('dctx').textContent='Select an email above to pre-fill context, or describe what you want to write below.';
+  document.getElementById('dinput').value='';
+  document.getElementById('dout-wrap').style.display='none';
+  renderEmails();
+}
+function copyDraft(){
+  const t=document.getElementById('dtext').textContent;
+  if(t&&t!=='Drafting...')navigator.clipboard.writeText(t).then(()=>{const b=event.target;b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1500);});
+}
+
+function getDue(ds){
+  const today=new Date();today.setHours(0,0,0,0);
+  const due=new Date(ds+'T00:00:00');
+  const diff=Math.round((due-today)/86400000);
+  if(diff<0)return{label:'Overdue',cls:'ov'};
+  if(diff===0)return{label:'Today',cls:'td'};
+  if(diff===1)return{label:'Tomorrow',cls:'sn'};
+  return{label:due.toLocaleDateString('en-GB',{day:'numeric',month:'short'}),cls:'sn'};
+}
+function stcls(s){if(s==='IN PROGRESS')return 's-ip';if(s==='BLOCKED')return 's-bl';if(s==='COMPLETE')return 's-co';return 's-ns';}
+function renderTasks(){
+  document.getElementById('tlist').innerHTML=TASKS.map(t=>{
+    const{label,cls}=getDue(t.due);
+    return`<div class="titem"><div class="tdue-col"><span class="tdue ${cls}">${label}</span></div><div class="tbody"><div class="tname">${t.name}</div>${t.prog?`<div class="tmeta">${t.prog}</div>`:''}</div><span class="tstatus ${stcls(t.status)}">${t.status.replace('_',' ')}</span></div>`;
+  }).join('');
+}
+
+let notes=[];
+try{notes=JSON.parse(localStorage.getItem('ns_cmd_notes')||'[]');}catch(e){}
+function saveN(){try{localStorage.setItem('ns_cmd_notes',JSON.stringify(notes));}catch(e){}}
+function todayISO(){return new Date().toISOString().split('T')[0];}
+
+function renderNotes(){
+  const l=document.getElementById('nlist');
+  if(!notes.length){l.innerHTML='<div class="nempty">No notes yet — add one above</div>';return;}
+  l.innerHTML=notes.map((n,i)=>`<div class="nitem"><input type="checkbox" class="ncheck" ${n.done?'checked':''} onchange="compNote(${i},this)"><span class="ntxt${n.done?' done':''}">${n.text}</span>${n.syncing?'<span style="font-size:10px;color:var(--text3);flex-shrink:0">Saving...</span>':''}${n.done&&n.airtableId?'<span style="font-size:10px;color:var(--canopy);flex-shrink:0">&#10003; AT</span>':''}${!n.syncing?`<button class="ndel" onclick="delNote(${i})">&#215;</button>`:''}</div>`).join('');
+}
+
+function addNote(){
+  const inp=document.getElementById('ninput');
+  const txt=inp.value.trim();if(!txt)return;
+  notes.unshift({text:txt,done:false,created:Date.now(),airtableId:null,syncing:false});
+  saveN();renderNotes();inp.value='';inp.focus();
+}
+
+async function compNote(i,cb){
+  const isDone=cb.checked;
+  if(!isDone){
+    notes[i].done=false;notes[i].airtableId=null;saveN();
+    cb.closest('.nitem').querySelector('.ntxt').classList.remove('done');
+    return;
+  }
+  // Update DOM directly — no re-render
+  notes[i].done=true;saveN();
+  const row=cb.closest('.nitem');
+  row.querySelector('.ntxt').classList.add('done');
+  cb.disabled=true;
+  // Airtable REST API sync
+  try{
+    const payload={fields:{}};
+    payload.fields['fldpmnD9fOQ873oBg']=notes[i].text;
+    payload.fields['fldB6mIxeaOvx02l2']='Alex Godfrey';
+    payload.fields['fldzccvG7WreZDqdG']=todayISO();
+    payload.fields['fldy1u9qrjjQzgQZT']=todayISO();
+    payload.fields['fldmEG5cI2q86SmPO']=[AD];
+    payload.fields['fldmhF8dJJWHMYm3I']=true;
+    const res=await fetch(`https://api.airtable.com/v0/${AB}/${ATBL}`,{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+ATAT,'Content-Type':'application/json'},
+      body:JSON.stringify({records:[payload]})
+    });
+    const data=await res.json();
+    const recId=data.records?.[0]?.id;
+    notes[i].airtableId=recId||'saved';
+    // Add AT badge without re-render
+    const badge=document.createElement('span');
+    badge.style.cssText='font-size:10px;color:var(--canopy);flex-shrink:0';
+    badge.textContent='\u2713 AT';
+    const delBtn=row.querySelector('.ndel');
+    if(delBtn)row.insertBefore(badge,delBtn);
+  }catch(err){
+    notes[i].airtableId=null;
+  }
+  notes[i].syncing=false;saveN();
+  cb.disabled=false;
+}
+
+function delNote(i){notes.splice(i,1);saveN();renderNotes();}
+function clearNotes(){if(notes.length&&confirm('Clear all notes?')){notes=[];saveN();renderNotes();}}
+
+document.getElementById('date-display').textContent=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'});
+renderEmails();renderMtgs();renderTasks();renderNotes();loadIntel();
+
+// Token setup
+function checkToken(){
+  ATAT=localStorage.getItem('ns_airtable_token')||'';
+  if(!ATAT){
+    document.getElementById('token-modal').style.display='flex';
+  }
+}
+function saveToken(){
+  const val=document.getElementById('token-input').value.trim();
+  const err=document.getElementById('token-err');
+  if(!val.startsWith('pat')){err.style.display='block';return;}
+  err.style.display='none';
+  localStorage.setItem('ns_airtable_token',val);
+  ATAT=val;
+  document.getElementById('token-modal').style.display='none';
+}
+function resetToken(){
+  localStorage.removeItem('ns_airtable_token');
+  ATAT='';
+  document.getElementById('token-input').value='';
+  document.getElementById('token-modal').style.display='flex';
+}
+checkToken();
+</script>
+</body>
+</html>
