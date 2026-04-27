@@ -468,10 +468,11 @@ const msalConfig = {
   cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
 };
 
-const msalInstance = new msal.PublicClientApplication(msalConfig);
+let msalInstance = null;
 let graphToken = null;
 
 async function initAuth() {
+  msalInstance = new msal.PublicClientApplication(msalConfig);
   await msalInstance.initialize();
   // Handle redirect
   try {
