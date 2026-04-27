@@ -287,7 +287,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
     <div class="login-logo">🌿</div>
     <div class="login-title">Command Centre</div>
     <div class="login-sub">Natural State · Alex Godfrey<br>Sign in to load your live dashboard</div>
-    <button class="login-btn" onclick="signIn()">
+    <button class="login-btn" id="signin-btn" onclick="signIn()" disabled style="opacity:0.6;cursor:not-allowed;">
       <svg viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
         <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
@@ -472,42 +472,51 @@ let msalInstance = null;
 let graphToken = null;
 
 async function initAuth() {
-  msalInstance = new msal.PublicClientApplication(msalConfig);
-  await msalInstance.initialize();
-  // Handle redirect
   try {
-    const result = await msalInstance.handleRedirectPromise();
-    if (result) {
+    msalInstance = new msal.PublicClientApplication(msalConfig);
+    await msalInstance.initialize();
+
+    let result = null;
+    try { result = await msalInstance.handleRedirectPromise(); } catch(e) { console.error('Redirect:', e); }
+
+    if (result && result.accessToken) {
       graphToken = result.accessToken;
       showDashboard(result.account);
       return;
     }
-  } catch(e) { console.error('Redirect error:', e); }
 
-  // Check existing accounts
-  const accounts = msalInstance.getAllAccounts();
-  if (accounts.length > 0) {
-    try {
-      const result = await msalInstance.acquireTokenSilent({ scopes: SCOPES, account: accounts[0] });
-      graphToken = result.accessToken;
-      showDashboard(accounts[0]);
-    } catch(e) {
-      // Silent failed — show login
-      document.getElementById('login-screen').style.display = 'flex';
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      try {
+        const silent = await msalInstance.acquireTokenSilent({ scopes: SCOPES, account: accounts[0] });
+        graphToken = silent.accessToken;
+        showDashboard(accounts[0]);
+        return;
+      } catch(e) { console.log('Silent failed:', e.message); }
     }
-  } else {
+
+    document.getElementById('login-screen').style.display = 'flex';
+  } catch(e) {
+    console.error('initAuth error:', e);
+    document.getElementById('login-status').textContent = 'Init error: ' + e.message;
     document.getElementById('login-screen').style.display = 'flex';
   }
 }
 
 async function signIn() {
-  document.getElementById('login-status').textContent = 'Redirecting to Microsoft…';
+  document.getElementById('login-status').textContent = 'Connecting to Microsoft…';
   try {
+    if (!msalInstance) {
+      msalInstance = new msal.PublicClientApplication(msalConfig);
+      await msalInstance.initialize();
+    }
     await msalInstance.loginRedirect({ scopes: SCOPES });
   } catch(e) {
     document.getElementById('login-status').textContent = 'Error: ' + e.message;
+    console.error('SignIn error:', e);
   }
 }
+
 
 function signOut() {
   if(confirm('Sign out of the dashboard?')) {
