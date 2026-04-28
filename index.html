@@ -990,16 +990,9 @@ async function buildIntel() {
   // Build email context for Claude
   const emailContext = EMAILS.slice(0, 15).map(e =>
     `[${e.source === 'teams' ? 'TEAMS' : 'EMAIL'}] FROM: ${e.sender} | SUBJECT: ${e.subject} | TIME: ${e.time} | URGENT: ${e.tags.includes('urgent')} | BODY: ${(e.body||'').substring(0, 200)}`
-  ).join('
+  ).join('\n\n');
 
-');
-
-  const prompt = `You are Alex Godfrey's intelligence assistant. Alex is Strategy & Systems Implementation Specialist at Natural State (environmental NGO), based in New Jersey. Analyse these emails/messages and respond with JSON only (no markdown, no explanation).
-
-MESSAGES:
-${emailContext}
-
-Return this exact JSON structure:
+  const prompt = `You are Alex Godfrey's intelligence assistant. Alex is Strategy & Systems Implementation Specialist at Natural State (environmental NGO), based in New Jersey. Analyse these emails/messages and respond with JSON only (no markdown, no explanation).\n\nMESSAGES:\n${emailContext}\n\nReturn this exact JSON structure:
 {
   "actions": [
     {"what": "specific action Alex needs to take (1 sentence, action verb)", "from": "sender name", "source": "email or teams", "days_pending": 0, "urgent": false, "webLink": ""}
