@@ -188,6 +188,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
   font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
 .isec-hdr.red{color:var(--rust);}
 .isec-hdr.grn{color:var(--canopy);}
+.isec-hdr.blue{color:#1a5fa8;}
+.isec-hdr.amber{color:#b85c00;}
 .iitem{display:flex;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);transition:background .1s;}
 .iitem:hover{background:var(--dew);}
 .iitem:last-child{border-bottom:none;}
@@ -400,7 +402,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
   </div>
 
   <div class="metrics">
-    <div class="metric"><div class="m-label">Unread emails</div><div class="m-val" id="m-unread">—</div><div class="m-sub">Inbox today</div></div>
+    <div class="metric"><div class="m-label">Unread emails</div><div class="m-val" id="m-unread">—</div><div class="m-sub">Focused inbox</div></div>
     <div class="metric"><div class="m-label">Action required</div><div class="m-val" id="m-action">—</div><div class="m-sub">Direct asks from you</div></div>
     <div class="metric"><div class="m-label">Meetings today</div><div class="m-val" id="m-mtgs">—</div><div class="m-sub" id="m-mtgs-sub">Work meetings</div></div>
     <div class="metric"><div class="m-label">Tasks due soon</div><div class="m-val">11</div><div class="m-sub">Next 7 days · Airtable</div></div>
@@ -939,46 +941,62 @@ async function buildIntel() {
   document.getElementById('m-action').textContent = actionEmails.length;
   document.getElementById('intel-badge').textContent = `Live · ${new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}`;
 
-  const actionHTML = actionEmails.map((e, i) => `
+  // Seed To Do panel with action items not already present
+  actionEmails.forEach(e => {
+    const taskText = `Reply to ${e.sender}: ${e.subject.substring(0, 60)}`;
+    const alreadyExists = notes.some(n => n.text.includes(e.subject.substring(0, 30)));
+    if (!alreadyExists) {
+      notes.push({text: taskText, done: false, created: Date.now(), airtableId: null, seeded: true});
+    }
+  });
+  saveN(); renderNotes();
+
+  // Action items HTML - with source badge (email/teams)
+  const actionHTML = actionEmails.map((e, i) => {
+    const sourceBadge = e.source === 'teams'
+      ? '<span style="font-size:9px;font-weight:600;background:#f0e8fe;color:#5c3ab5;padding:1px 5px;border-radius:3px;margin-left:4px;">TEAMS</span>'
+      : '<span style="font-size:9px;font-weight:600;background:#e8f0fb;color:#1a5fa8;padding:1px 5px;border-radius:3px;margin-left:4px;">EMAIL</span>';
+    return `
     <div class="iitem">
-      <div class="inum">${i+1}</div>
       <div class="ibody">
         <div class="ititle">
+          ${sourceBadge}
           ${e.webLink ? `<a href="${e.webLink}" target="_blank" rel="noopener">${e.subject}</a>` : e.subject}
-          <span class="itag t-reply">reply</span>
         </div>
         <div class="imeta">${e.sender} · ${e.time}</div>
-        <div class="idesc">${e.body.substring(0, 120)}</div>
+        <div class="idesc">${(e.body||'').substring(0, 140)}</div>
       </div>
-    </div>`).join('') || '<div style="padding:12px 16px;font-size:11px;color:var(--text3);">No direct action items — great start!</div>';
+    </div>`;
+  }).join('') || '<div style="padding:12px 16px;font-size:11px;color:var(--text3);">No direct action items — great start!</div>';
 
-  const fyiSummary = fyi.length
-    ? fyi.slice(0, 5).map(e => `<b>${e.sender}</b>: ${e.subject}`).join(' · ')
-    : 'No FYI items';
+  // FYI summary bullets
+  const fyiHTML = fyi.length
+    ? fyi.slice(0, 6).map(e => `<div class="iitem" style="padding:6px 0;border-bottom:0.5px solid var(--bdr);"><div class="imeta" style="font-size:11px;"><b>${e.sender}</b></div><div style="font-size:11px;color:var(--text2);">${e.subject}</div></div>`).join('')
+    : '<div style="font-size:11px;color:var(--text3);padding:8px 0;">No FYI items</div>';
 
-  const priorities = actionEmails.slice(0, 6).map((e, i) => `
-    <div class="i-pri-item">
-      <div class="pnum">${i+1}</div>
-      <span>${e.subject.substring(0, 55)}</span>
-    </div>`).join('');
+  // Priority items
+  const today = new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  const calToday = EVENTS.filter(e => e.day === 'today' && !e.excluded);
+  const calHTML = calToday.length
+    ? calToday.map(e => `<div style="font-size:11px;color:var(--text2);padding:3px 0;border-bottom:0.5px solid var(--bdr);">📅 ${e.time} — ${e.title}</div>`).join('')
+    : '<div style="font-size:11px;color:var(--text3);">No meetings today</div>';
 
   document.getElementById('intel-body').innerHTML = `
     <div class="intel-cols">
       <div class="intel-col">
-        <div class="isec-hdr red">🔴 Actions required from you — ${actionEmails.length} items</div>
+        <div class="isec-hdr red">ACTIONS FOR ALEX</div>
         ${actionHTML}
       </div>
-      <div class="intel-col" style="display:flex;flex-direction:column;">
-        <div class="i-sum-hdr">📋 Summary of other messages</div>
-        <div class="i-sum-body">
-          <div class="i-sum-txt">${fyi.length} FYI emails in your inbox. ${fyiSummary}</div>
-        </div>
+      <div class="intel-col">
+        <div class="isec-hdr blue">SUMMARY</div>
+        ${fyiHTML}
       </div>
-      <div class="intel-col" style="display:flex;flex-direction:column;">
-        <div class="i-sum-hdr">⚡ Priority recommendation</div>
-        <div class="i-sum-body">
-          <div class="i-pri-list">${priorities || '<div style="font-size:11px;color:var(--text3)">Inbox clear — no priorities outstanding</div>'}</div>
-        </div>
+      <div class="intel-col">
+        <div class="isec-hdr amber">PRIORITIES</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:500;">Today · ${today}</div>
+        ${calHTML}
+        <div style="margin-top:10px;font-size:11px;color:var(--text2);font-weight:500;">Action items (${actionEmails.length})</div>
+        ${actionEmails.slice(0,4).map(e => `<div style="font-size:11px;color:var(--text2);padding:3px 0;border-bottom:0.5px solid var(--bdr);">· ${e.subject.substring(0,50)}</div>`).join('')}
       </div>
     </div>`;
 }
@@ -1003,8 +1021,8 @@ async function genDraft() {
   const tel = document.getElementById('dtext');
   if (!inst && !e) { tel.textContent='Please select an email or describe what to write.'; wrap.style.display='block'; return; }
   const prompt = e
-    ? `Professional email assistant for Alex Godfrey, Strategy & Systems at Natural State (environmental NGO). Tone: ${tone}. Email from ${e.sender}, Subject: "${e.subject}". Context: ${e.body}. Instruction: ${inst||'Write a professional reply'}. Body only, no subject.`
-    : `Professional email assistant for Alex Godfrey at Natural State. Tone: ${tone}. Write: "${inst}". Body only, no subject.`;
+    ? `You are a professional email assistant for Alex Godfrey, Strategy & Systems Implementation Specialist at Natural State (environmental NGO). Tone: ${tone}. You are replying to an email from ${e.sender} with subject "${e.subject}". The email content is: ${e.body}. Instruction: ${inst||'Write a professional reply'}. Write the email body only — no subject line, no greeting preamble beyond "Hi [name]," and stop before any sign-off or signature (do not include "Best regards", "Kind regards", "Thanks", or any closing). Alex has his own signature.`
+    : `You are a professional email assistant for Alex Godfrey at Natural State (environmental NGO). Tone: ${tone}. Write: "${inst}". Write the email body only — no subject line and stop before any sign-off or signature (do not include "Best regards", "Kind regards", or any closing). Alex has his own signature.`;
   wrap.style.display = 'block';
   tel.textContent = 'Drafting…';
   try {
