@@ -656,17 +656,26 @@ async function loadEmails() {
   try {
     const now = new Date();
     const since = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const data = await callGraph(
-      `/me/messages?$filter=isRead eq false and receivedDateTime ge ${since}&$orderby=receivedDateTime desc&$top=50&$select=id,subject,from,receivedDateTime,bodyPreview,isRead,importance,webLink`
-    );
+    // Fetch all unread + focused inbox count in parallel
+    const [data, focusedData] = await Promise.all([
+      callGraph(`/me/messages?$filter=isRead eq false and receivedDateTime ge ${since}&$orderby=receivedDateTime desc&$top=50&$select=id,subject,from,receivedDateTime,body,bodyPreview,isRead,importance,webLink`),
+      callGraph(`/me/messages?$filter=isRead eq false and inferenceClassification eq 'focused' and receivedDateTime ge ${since}&$top=50&$select=id`).catch(() => ({value:[]}))
+    ]);
     EMAILS = (data.value || []).map((m, i) => {
       const sender = m.from?.emailAddress?.address || '';
       const isInternal = sender.includes('naturalstate.org');
       const subj = m.subject || '';
       const preview = m.bodyPreview || '';
-      const body = preview;
-      // Simple action detection
-      const actionKeywords = ['alex', 'alexander', 'please', 'can you', 'could you', 'kindly', '@alex'];
+      // Strip HTML and quoted reply chains from body
+      const rawBody = m.body?.content || preview;
+      const strippedBody = rawBody
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/\s+/g, ' ').trim()
+        .split(/From:.*Sent:|On .{5,100} wrote:|_{5,}/)[0]
+        .trim().substring(0, 800);
+      const actionKeywords = ['alex', 'alexander', 'please', 'can you', 'could you', 'kindly', '@alex', 'godfrey'];
       const isAction = actionKeywords.some(k => (subj + preview).toLowerCase().includes(k));
       const tags = [];
       if (isAction) tags.push('action');
@@ -674,22 +683,20 @@ async function loadEmails() {
       if (!isInternal) tags.push('external');
       if (!isAction) tags.push('fyi');
       return {
-        id: i + 1,
-        msgId: m.id,
+        id: i + 1, msgId: m.id,
         sender: m.from?.emailAddress?.name || sender,
-        senderEmail: sender,
-        subject: subj,
+        senderEmail: sender, subject: subj,
         preview: preview.substring(0, 100),
-        body: body.substring(0, 300),
+        body: strippedBody,
         time: formatEmailTime(m.receivedDateTime),
-        tags,
-        priority: m.importance === 'high' ? 'high' : isAction ? 'med' : 'low',
-        unread: !m.isRead,
-        internal: isInternal,
-        webLink: m.webLink || ''
+        receivedDateTime: m.receivedDateTime,
+        tags, priority: m.importance === 'high' ? 'high' : isAction ? 'med' : 'low',
+        unread: !m.isRead, internal: isInternal,
+        webLink: m.webLink || '', source: 'email'
       };
     });
-    document.getElementById('m-unread').textContent = EMAILS.filter(e => e.unread).length;
+    // Metric tile: focused inbox unread count only
+    document.getElementById('m-unread').textContent = (focusedData.value || []).length;
     renderEmails();
   } catch(e) {
     console.error('Email load error:', e);
@@ -785,9 +792,23 @@ async function loadCalendar() {
     EVENTS = (data.value || [])
       .filter(e => !e.isCancelled)
       .map(e => {
-        const startET = new Date(new Date(e.start.dateTime + (e.start.dateTime.endsWith('Z') ? '' : 'Z')).getTime() - 4 * 3600000);
-        const endET = new Date(new Date(e.end.dateTime + (e.end.dateTime.endsWith('Z') ? '' : 'Z')).getTime() - 4 * 3600000);
-        const dayKey = getDayKey(startET, new Date(now.getTime() - ET_OFFSET_MS));
+        // Parse event times as UTC then subtract 4h to get ET — never use local timezone
+        const startUTC = new Date(e.start.dateTime + (e.start.dateTime.endsWith('Z') ? '' : 'Z'));
+        const endUTC = new Date(e.end.dateTime + (e.end.dateTime.endsWith('Z') ? '' : 'Z'));
+        const startETms = startUTC.getTime() - 4 * 3600000;
+        const endETms = endUTC.getTime() - 4 * 3600000;
+        // Format time using UTC methods on the shifted timestamp (avoids browser locale)
+        const fmt12 = ms => {
+          const d = new Date(ms);
+          let h = d.getUTCHours(), m = d.getUTCMinutes();
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          h = h % 12 || 12;
+          return h + (m ? ':' + String(m).padStart(2,'0') : '') + ' ' + ampm;
+        };
+        // Day key using UTC date parts of the ET-shifted time
+        const startETDate = new Date(startETms);
+        const todayET = new Date(now.getTime() - ET_OFFSET_MS);
+        const dayKey = getDayKeyUTC(startETDate, todayET);
         const cats = e.categories || [];
         const title = e.subject || '';
         const excluded = isExcluded(title, cats);
@@ -797,8 +818,8 @@ async function loadCalendar() {
           : (e.location?.displayName || '');
         return {
           title,
-          time: e.isAllDay ? 'All day' : startET.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true}),
-          end: e.isAllDay ? '' : endET.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true}),
+          time: e.isAllDay ? 'All day' : fmt12(startETms),
+          end: e.isAllDay ? '' : fmt12(endETms),
           allDay: e.isAllDay,
           day: dayKey,
           work: !excluded && !e.isAllDay,
@@ -826,9 +847,15 @@ async function loadCalendar() {
 }
 
 function getDayKey(eventDate, today) {
-  const e = new Date(eventDate); e.setHours(0,0,0,0);
-  const t = new Date(today); t.setHours(0,0,0,0);
-  const diff = Math.round((e - t) / 86400000);
+  return getDayKeyUTC(eventDate, today);
+}
+function getDayKeyUTC(eventDate, today) {
+  // Use UTC date parts to avoid browser timezone corruption
+  const eD = new Date(eventDate);
+  const tD = new Date(today);
+  const eDateOnly = Date.UTC(eD.getUTCFullYear(), eD.getUTCMonth(), eD.getUTCDate());
+  const tDateOnly = Date.UTC(tD.getUTCFullYear(), tD.getUTCMonth(), tD.getUTCDate());
+  const diff = Math.round((eDateOnly - tDateOnly) / 86400000);
   if (diff === 0) return 'today';
   if (diff === 1) return 'tomorrow';
   if (diff >= 2 && diff <= 6) return 'week';
@@ -937,9 +964,10 @@ async function refreshCalendar() {
 async function buildIntel() {
   const actionEmails = EMAILS.filter(e => e.tags.includes('action')).slice(0, 8);
   const fyi = EMAILS.filter(e => !e.tags.includes('action'));
+  const now = new Date();
 
   document.getElementById('m-action').textContent = actionEmails.length;
-  document.getElementById('intel-badge').textContent = `Live · ${new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}`;
+  document.getElementById('intel-badge').textContent = `Live · ${now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}`;
 
   // Seed To Do panel with action items not already present
   actionEmails.forEach(e => {
@@ -951,54 +979,116 @@ async function buildIntel() {
   });
   saveN(); renderNotes();
 
-  // Action items HTML - with source badge (email/teams)
-  const actionHTML = actionEmails.map((e, i) => {
-    const sourceBadge = e.source === 'teams'
-      ? '<span style="font-size:9px;font-weight:600;background:#f0e8fe;color:#5c3ab5;padding:1px 5px;border-radius:3px;margin-left:4px;">TEAMS</span>'
-      : '<span style="font-size:9px;font-weight:600;background:#e8f0fb;color:#1a5fa8;padding:1px 5px;border-radius:3px;margin-left:4px;">EMAIL</span>';
-    return `
-    <div class="iitem">
-      <div class="ibody">
-        <div class="ititle">
-          ${sourceBadge}
-          ${e.webLink ? `<a href="${e.webLink}" target="_blank" rel="noopener">${e.subject}</a>` : e.subject}
-        </div>
-        <div class="imeta">${e.sender} · ${e.time}</div>
-        <div class="idesc">${(e.body||'').substring(0, 140)}</div>
-      </div>
-    </div>`;
-  }).join('') || '<div style="padding:12px 16px;font-size:11px;color:var(--text3);">No direct action items — great start!</div>';
-
-  // FYI summary bullets
-  const fyiHTML = fyi.length
-    ? fyi.slice(0, 6).map(e => `<div class="iitem" style="padding:6px 0;border-bottom:0.5px solid var(--bdr);"><div class="imeta" style="font-size:11px;"><b>${e.sender}</b></div><div style="font-size:11px;color:var(--text2);">${e.subject}</div></div>`).join('')
-    : '<div style="font-size:11px;color:var(--text3);padding:8px 0;">No FYI items</div>';
-
-  // Priority items
-  const today = new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-  const calToday = EVENTS.filter(e => e.day === 'today' && !e.excluded);
-  const calHTML = calToday.length
-    ? calToday.map(e => `<div style="font-size:11px;color:var(--text2);padding:3px 0;border-bottom:0.5px solid var(--bdr);">📅 ${e.time} — ${e.title}</div>`).join('')
-    : '<div style="font-size:11px;color:var(--text3);">No meetings today</div>';
-
+  // Show loading state then call Claude for smart analysis
   document.getElementById('intel-body').innerHTML = `
     <div class="intel-cols">
-      <div class="intel-col">
-        <div class="isec-hdr red">ACTIONS FOR ALEX</div>
-        ${actionHTML}
-      </div>
-      <div class="intel-col">
-        <div class="isec-hdr blue">SUMMARY</div>
-        ${fyiHTML}
-      </div>
-      <div class="intel-col">
-        <div class="isec-hdr amber">PRIORITIES</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:500;">Today · ${today}</div>
-        ${calHTML}
-        <div style="margin-top:10px;font-size:11px;color:var(--text2);font-weight:500;">Action items (${actionEmails.length})</div>
-        ${actionEmails.slice(0,4).map(e => `<div style="font-size:11px;color:var(--text2);padding:3px 0;border-bottom:0.5px solid var(--bdr);">· ${e.subject.substring(0,50)}</div>`).join('')}
-      </div>
+      <div class="intel-col"><div class="isec-hdr red">ACTIONS FOR ALEX</div><div style="padding:16px;font-size:11px;color:var(--text3);">Analysing…</div></div>
+      <div class="intel-col"><div class="isec-hdr blue">SUMMARY</div><div style="padding:16px;font-size:11px;color:var(--text3);">Analysing…</div></div>
+      <div class="intel-col"><div class="isec-hdr amber">PRIORITIES</div><div style="padding:16px;font-size:11px;color:var(--text3);">Analysing…</div></div>
     </div>`;
+
+  // Build email context for Claude
+  const emailContext = EMAILS.slice(0, 15).map(e =>
+    `[${e.source === 'teams' ? 'TEAMS' : 'EMAIL'}] FROM: ${e.sender} | SUBJECT: ${e.subject} | TIME: ${e.time} | URGENT: ${e.tags.includes('urgent')} | BODY: ${(e.body||'').substring(0, 200)}`
+  ).join('
+
+');
+
+  const prompt = `You are Alex Godfrey's intelligence assistant. Alex is Strategy & Systems Implementation Specialist at Natural State (environmental NGO), based in New Jersey. Analyse these emails/messages and respond with JSON only (no markdown, no explanation).
+
+MESSAGES:
+${emailContext}
+
+Return this exact JSON structure:
+{
+  "actions": [
+    {"what": "specific action Alex needs to take (1 sentence, action verb)", "from": "sender name", "source": "email or teams", "days_pending": 0, "urgent": false, "webLink": ""}
+  ],
+  "summary": [
+    {"sender": "sender name", "summary": "2-sentence summary of what they sent and what Alex should know"}
+  ],
+  "priorities": [
+    {"text": "priority description", "reason": "why this is high priority (pending X days / marked urgent / etc)"}
+  ]
+}
+
+Rules:
+- actions: derive the actual task Alex needs to DO (not just "reply to email about X" — be specific e.g. "Review and sign the amended ACNRR contract" or "Schedule update call with T. Gray on big cat financing"). Max 8 items.
+- summary: group by sender. If same sender has multiple messages, combine them. Max 8 senders. Be concise.
+- priorities: top 5 items ranked by urgency. Prioritise: items marked urgent, items pending 2+ days, items from leadership (JB/Rakhee). No calendar events.`;
+
+  try {
+    const res = await fetch(PROXY + '/anthropic', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({payload: {model: 'claude-sonnet-4-5', max_tokens: 1500, messages: [{role:'user', content: prompt}]}})
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '';
+    // Strip any markdown code fences
+    const jsonStr = raw.replace(/```json|```/g, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(jsonStr); } catch(err) { throw new Error('Parse failed: ' + raw.substring(0, 100)); }
+
+    // Render actions
+    const actionsHTML = (parsed.actions || []).map(a => {
+      const sourceBadge = a.source === 'teams'
+        ? '<span style="font-size:9px;font-weight:600;background:#f0e8fe;color:#5c3ab5;padding:1px 5px;border-radius:3px;">TEAMS</span>'
+        : '<span style="font-size:9px;font-weight:600;background:#e8f0fb;color:#1a5fa8;padding:1px 5px;border-radius:3px;">EMAIL</span>';
+      const urgentBadge = a.urgent ? '<span style="font-size:9px;font-weight:600;background:#fdf0ef;color:#c0392b;padding:1px 5px;border-radius:3px;">URGENT</span>' : '';
+      const pendingBadge = a.days_pending >= 2 ? `<span style="font-size:9px;background:#fff3e0;color:#b85c00;padding:1px 5px;border-radius:3px;">${a.days_pending}d pending</span>` : '';
+      const link = a.webLink ? `<a href="${a.webLink}" target="_blank" rel="noopener" style="font-size:10px;color:var(--link);margin-left:4px;">open ↗</a>` : '';
+      return `<div class="iitem">
+        <div class="ibody">
+          <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">${sourceBadge}${urgentBadge}${pendingBadge}</div>
+          <div class="ititle" style="font-weight:500;">${a.what}${link}</div>
+          <div class="imeta">${a.from}</div>
+        </div>
+      </div>`;
+    }).join('') || '<div style="padding:12px 16px;font-size:11px;color:var(--text3);">No action items — inbox clear!</div>';
+
+    // Render summary grouped by sender
+    const summaryHTML = (parsed.summary || []).map(s => `
+      <div class="iitem" style="padding:8px 16px;">
+        <div class="ibody">
+          <div style="font-size:11px;font-weight:600;color:var(--text1);margin-bottom:2px;">${s.sender}</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.5;">${s.summary}</div>
+        </div>
+      </div>`).join('') || '<div style="padding:12px 16px;font-size:11px;color:var(--text3);">No FYI items</div>';
+
+    // Render priorities (no calendar events)
+    const prioritiesHTML = (parsed.priorities || []).map((p, i) => `
+      <div style="padding:7px 16px;border-bottom:0.5px solid var(--border);">
+        <div style="display:flex;gap:6px;align-items:flex-start;">
+          <span style="font-size:10px;font-weight:700;color:${i===0?'#c0392b':i<=1?'#b85c00':'var(--text3)'};min-width:14px;">${i+1}</span>
+          <div>
+            <div style="font-size:11px;font-weight:500;color:var(--text1);">${p.text}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:1px;">${p.reason}</div>
+          </div>
+        </div>
+      </div>`).join('') || '<div style="padding:12px 16px;font-size:11px;color:var(--text3);">No priorities flagged</div>';
+
+    document.getElementById('intel-body').innerHTML = `
+      <div class="intel-cols">
+        <div class="intel-col"><div class="isec-hdr red">ACTIONS FOR ALEX</div>${actionsHTML}</div>
+        <div class="intel-col"><div class="isec-hdr blue">SUMMARY</div>${summaryHTML}</div>
+        <div class="intel-col"><div class="isec-hdr amber">PRIORITIES</div>${prioritiesHTML}</div>
+      </div>`;
+
+  } catch(err) {
+    document.getElementById('intel-body').innerHTML = `
+      <div class="intel-cols">
+        <div class="intel-col"><div class="isec-hdr red">ACTIONS FOR ALEX</div>
+          ${actionEmails.map(e => `<div class="iitem"><div class="ibody"><div class="ititle">${e.subject}</div><div class="imeta">${e.sender} · ${e.time}</div></div></div>`).join('')}
+        </div>
+        <div class="intel-col"><div class="isec-hdr blue">SUMMARY</div>
+          <div style="padding:12px 16px;font-size:11px;color:var(--rust);">AI analysis unavailable: ${err.message}</div>
+        </div>
+        <div class="intel-col"><div class="isec-hdr amber">PRIORITIES</div>
+          <div style="padding:12px 16px;font-size:11px;color:var(--text3);">Refresh to retry</div>
+        </div>
+      </div>`;
+  }
 }
 
 async function refreshIntel() {
