@@ -761,13 +761,17 @@ let EVENTS = [], mf = 'today';
 async function loadCalendar() {
   try {
     const now = new Date();
-    // Get today in ET (UTC-4)
-    const etOffset = -4 * 60;
-    const etNow = new Date(now.getTime() + (etOffset - now.getTimezoneOffset()) * 60000);
-    const startOfToday = new Date(etNow);
-    startOfToday.setHours(0, 0, 0, 0);
-    const endDate = new Date(startOfToday);
-    endDate.setDate(endDate.getDate() + 14);
+    // ET is UTC-4. Compute today's date in ET by using UTC offset.
+    const ET_OFFSET_MS = 4 * 60 * 60 * 1000; // 4 hours in ms
+    const etNow = new Date(now.getTime() - ET_OFFSET_MS);
+    // ET midnight = UTC 04:00 on the same ET calendar date
+    const etYear = etNow.getUTCFullYear();
+    const etMonth = etNow.getUTCMonth();
+    const etDay = etNow.getUTCDate();
+    // Start = today 00:00 ET = today 04:00 UTC
+    const startOfToday = new Date(Date.UTC(etYear, etMonth, etDay, 4, 0, 0));
+    // End = 14 days later at ET midnight
+    const endDate = new Date(Date.UTC(etYear, etMonth, etDay + 14, 4, 0, 0));
 
     const start = startOfToday.toISOString().replace('.000Z', 'Z');
     const end = endDate.toISOString().replace('.000Z', 'Z');
@@ -781,7 +785,7 @@ async function loadCalendar() {
       .map(e => {
         const startET = new Date(new Date(e.start.dateTime + (e.start.dateTime.endsWith('Z') ? '' : 'Z')).getTime() - 4 * 3600000);
         const endET = new Date(new Date(e.end.dateTime + (e.end.dateTime.endsWith('Z') ? '' : 'Z')).getTime() - 4 * 3600000);
-        const dayKey = getDayKey(startET, etNow);
+        const dayKey = getDayKey(startET, new Date(now.getTime() - ET_OFFSET_MS));
         const cats = e.categories || [];
         const title = e.subject || '';
         const excluded = isExcluded(title, cats);
@@ -1010,7 +1014,10 @@ async function genDraft() {
       body: JSON.stringify({ payload: { model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] } })
     });
     const data = await res.json();
-    if (data.error) { tel.textContent = 'Error: ' + data.error.message; return; }
+    if (!res.ok || data.error) {
+      tel.textContent = 'Error: ' + (data.error?.message || data.error || JSON.stringify(data));
+      return;
+    }
     tel.textContent = data.content?.[0]?.text || 'Could not generate draft.';
   } catch(err) { tel.textContent = 'Error: ' + err.message; }
 }
