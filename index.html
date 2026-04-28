@@ -1011,7 +1011,7 @@ async function genDraft() {
     const res = await fetch(PROXY + '/anthropic', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ payload: { model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] } })
+      body: JSON.stringify({ payload: { model: 'claude-sonnet-4-5', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] } })
     });
     const data = await res.json();
     if (!res.ok || data.error) {
