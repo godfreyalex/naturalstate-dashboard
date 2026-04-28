@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Command Centre — NATURAL STATE</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" crossorigin="anonymous"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -504,15 +504,21 @@ async function initAuth() {
 }
 
 async function signIn() {
-  document.getElementById('login-status').textContent = 'Connecting to Microsoft…';
+  const statusEl = document.getElementById('login-status');
+  statusEl.textContent = 'Connecting…';
   try {
-    if (!msalInstance) {
-      msalInstance = new msal.PublicClientApplication(msalConfig);
-      await msalInstance.initialize();
+    // Check if MSAL library loaded
+    if (typeof msal === 'undefined') {
+      statusEl.textContent = 'Error: MSAL library not loaded. Please refresh the page.';
+      return;
     }
+    // Always create fresh instance for sign-in
+    const freshInstance = new msal.PublicClientApplication(msalConfig);
+    await freshInstance.initialize();
+    msalInstance = freshInstance;
     await msalInstance.loginRedirect({ scopes: SCOPES });
   } catch(e) {
-    document.getElementById('login-status').textContent = 'Error: ' + e.message;
+    statusEl.textContent = 'Error: ' + e.message;
     console.error('SignIn error:', e);
   }
 }
@@ -1065,7 +1071,16 @@ function clearNotes() {
 }
 
 // ── INIT ──────────────────────────────────────────────────
-initAuth();
+// Wait for page and MSAL to fully load before initializing
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    initAuth().catch(function(e) {
+      console.error('Auth init failed:', e);
+      document.getElementById('login-status').textContent = 'Init failed: ' + e.message;
+      document.getElementById('login-screen').style.display = 'flex';
+    });
+  }, 100);
+});
 </script>
 </body>
 </html>
