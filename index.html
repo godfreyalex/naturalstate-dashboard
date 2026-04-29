@@ -288,7 +288,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
 .sdot{width:6px;height:6px;border-radius:50%;background:var(--moss);flex-shrink:0;}
 
 /* TASKS */
-.tlist{max-height:280px;overflow-y:auto;}
+.tlist{max-height:320px;overflow-y:auto;}
+.tdiv-group{margin-bottom:2px;}
+.tdiv-hdr{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:8px 16px 4px;background:var(--dew);border-bottom:0.5px solid var(--border);}
 .titem{display:flex;align-items:flex-start;gap:10px;padding:9px 16px;
   border-bottom:1px solid var(--border);transition:background .1s;}
 .titem:hover{background:var(--dew);}
@@ -493,8 +495,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--dew);color:var(--text1);m
     <!-- TASKS -->
     <div class="panel">
       <div class="ph">
-        <div class="pt">✅ My tasks <span class="badge bg">Airtable</span></div>
-        <span style="font-size:10px;color:rgba(255,255,255,0.5);">Due in 7 days</span>
+        <div class="pt">⚠️ At Risk Tasks <span class="badge bg">Airtable</span></div>
+        <span style="font-size:10px;color:rgba(255,255,255,0.5);">Late · Blocked</span>
       </div>
       <div class="tlist" id="tlist"></div>
     </div>
@@ -635,7 +637,7 @@ async function showDashboard(account) {
   document.getElementById('user-name').textContent = (account.name || account.username).split(' ')[0];
   document.getElementById('sbar-text').textContent = `Connected · ${account.username} · Calendar ET (UTC−4)`;
 
-  renderTasks();
+  loadAtRiskTasks();
   renderNotes();
 
   try {
@@ -969,16 +971,6 @@ async function buildIntel() {
   document.getElementById('m-action').textContent = actionEmails.length;
   document.getElementById('intel-badge').textContent = `Live · ${now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}`;
 
-  // Seed To Do panel with action items not already present
-  actionEmails.forEach(e => {
-    const taskText = `Reply to ${e.sender}: ${e.subject.substring(0, 60)}`;
-    const alreadyExists = notes.some(n => n.text.includes(e.subject.substring(0, 30)));
-    if (!alreadyExists) {
-      notes.push({text: taskText, done: false, created: Date.now(), airtableId: null, seeded: true});
-    }
-  });
-  saveN(); renderNotes();
-
   // Show loading state then call Claude for smart analysis
   document.getElementById('intel-body').innerHTML = `
     <div class="intel-cols">
@@ -992,23 +984,37 @@ async function buildIntel() {
     `[${e.source === 'teams' ? 'TEAMS' : 'EMAIL'}] FROM: ${e.sender} | SUBJECT: ${e.subject} | TIME: ${e.time} | URGENT: ${e.tags.includes('urgent')} | BODY: ${(e.body||'').substring(0, 200)}`
   ).join('\n\n');
 
-  const prompt = `You are Alex Godfrey's intelligence assistant. Alex is Strategy & Systems Implementation Specialist at Natural State (environmental NGO), based in New Jersey. Analyse these emails/messages and respond with JSON only (no markdown, no explanation).\n\nMESSAGES:\n${emailContext}\n\nReturn this exact JSON structure:
+  const prompt = `You are Alex Godfrey's intelligence assistant. Alex is Strategy & Systems Implementation Specialist at Natural State (environmental NGO), based in New Jersey. Analyse these emails/messages and respond with JSON only (no markdown, no explanation).
+
+MESSAGES:
+${emailContext}
+
+Return this exact JSON structure:
 {
   "actions": [
-    {"what": "specific action Alex needs to take (1 sentence, action verb)", "from": "sender name", "source": "email or teams", "days_pending": 0, "urgent": false, "webLink": ""}
+    {
+      "context": "1-2 sentence background: who sent this, what the overall thread is about, why it involves Alex",
+      "what": "specific concrete action Alex needs to take (action verb, specific — e.g. 'Review and sign the amended ACNRR contract' not 'reply to email'). Only include if there is a REAL specific task — not just a general FYI.",
+      "from": "sender name",
+      "source": "email or teams",
+      "days_pending": 0,
+      "urgent": false,
+      "webLink": "",
+      "seedTodo": true
+    }
   ],
   "summary": [
     {"sender": "sender name", "summary": "2-sentence summary of what they sent and what Alex should know"}
   ],
   "priorities": [
-    {"text": "priority description", "reason": "why this is high priority (pending X days / marked urgent / etc)"}
+    {"text": "priority description", "reason": "why high priority (pending X days / marked urgent / from leadership)"}
   ]
 }
 
 Rules:
-- actions: derive the actual task Alex needs to DO (not just "reply to email about X" — be specific e.g. "Review and sign the amended ACNRR contract" or "Schedule update call with T. Gray on big cat financing"). Max 8 items.
-- summary: group by sender. If same sender has multiple messages, combine them. Max 8 senders. Be concise.
-- priorities: top 5 items ranked by urgency. Prioritise: items marked urgent, items pending 2+ days, items from leadership (JB/Rakhee). No calendar events.`;
+- actions: ONLY include if there is a real specific task for Alex to do — not a general email he is cc'd on, not an FYI. The 'context' field gives background BEFORE the action. The 'what' field is the specific task. Set seedTodo: true only when the action is concrete and specific (not just a vague reply).
+- summary: group by sender. Combine multiple messages from same sender. Max 8. Be concise.
+- priorities: top 5 ranked by urgency. Penalise items 2+ days old or marked urgent or from leadership (JB/Jonathan Baillie, Rakhee). No calendar events.`;
 
   try {
     const res = await fetch(PROXY + '/anthropic', {
@@ -1024,6 +1030,16 @@ Rules:
     try { parsed = JSON.parse(jsonStr); } catch(err) { throw new Error('Parse failed: ' + raw.substring(0, 100)); }
 
     // Render actions
+    // Also seed To Do only for concrete tasks identified by Claude
+    const todoActions = (parsed.actions || []).filter(a => a.seedTodo && a.what);
+    todoActions.forEach(a => {
+      const alreadyExists = notes.some(n => n.text.includes(a.what.substring(0, 30)));
+      if (!alreadyExists) {
+        notes.push({text: a.what, done: false, created: Date.now(), airtableId: null, seeded: true});
+      }
+    });
+    if (todoActions.length) { saveN(); renderNotes(); }
+
     const actionsHTML = (parsed.actions || []).map(a => {
       const sourceBadge = a.source === 'teams'
         ? '<span style="font-size:9px;font-weight:600;background:#f0e8fe;color:#5c3ab5;padding:1px 5px;border-radius:3px;">TEAMS</span>'
@@ -1034,8 +1050,9 @@ Rules:
       return `<div class="iitem">
         <div class="ibody">
           <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">${sourceBadge}${urgentBadge}${pendingBadge}</div>
-          <div class="ititle" style="font-weight:500;">${a.what}${link}</div>
-          <div class="imeta">${a.from}</div>
+          ${a.context ? `<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:5px;">${a.context}</div>` : ''}
+          <div class="ititle" style="font-weight:600;color:var(--text1);">→ ${a.what}${link}</div>
+          <div class="imeta" style="margin-top:2px;">${a.from}</div>
         </div>
       </div>`;
     }).join('') || '<div style="padding:12px 16px;font-size:11px;color:var(--text3);">No action items — inbox clear!</div>';
@@ -1137,45 +1154,67 @@ function copyDraft() {
   });
 }
 
-// ── TASKS ─────────────────────────────────────────────────
-const TASKS = [
-  {name:'Respond to ORKCA re: amended NS CAPEX',due:'2026-04-27',status:'NOT STARTED',prog:''},
-  {name:'Approve BILL.com invoices — Geijer $6,540 + Skeats',due:'2026-04-27',status:'NOT STARTED',prog:''},
-  {name:'Send Jordan Q1 financials to Jennifer Rhode Ward',due:'2026-04-27',status:'NOT STARTED',prog:''},
-  {name:'Confirm Christina Geijer can invoice for Canada travel',due:'2026-04-27',status:'NOT STARTED',prog:''},
-  {name:'Increase Claude usage limit — 90% consumed',due:'2026-04-27',status:'NOT STARTED',prog:''},
-  {name:'Review Mercy Kendi casual form submission',due:'2026-04-27',status:'NOT STARTED',prog:''},
-  {name:'Update IRS details with new address',due:'2026-04-27',status:'NOT STARTED',prog:'OP-A'},
-  {name:'Update Bank details with new address',due:'2026-04-27',status:'BLOCKED',prog:'OP-A'},
-  {name:'Cancel LinkedIn payment — Dir of Finance etc.',due:'2026-04-28',status:'IN PROGRESS',prog:''},
-  {name:'Confirm procurement process flow',due:'2026-04-28',status:'NOT STARTED',prog:'OP-B'},
-  {name:'Finalise NS US ↔ NS Kenya formal agreement',due:'2026-04-30',status:'NOT STARTED',prog:''},
-];
-function getDue(ds) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const due = new Date(ds + 'T00:00:00');
-  const diff = Math.round((due - today) / 86400000);
-  if (diff < 0) return {label:'Overdue', cls:'ov'};
-  if (diff === 0) return {label:'Today', cls:'td'};
-  if (diff === 1) return {label:'Tomorrow', cls:'sn'};
-  return {label: due.toLocaleDateString('en-GB',{day:'numeric',month:'short'}), cls:'sn'};
+// ── AT-RISK TASKS (live Airtable fetch) ─────────────────────
+// Status colours matching Airtable palette
+const STATUS_STYLE = {
+  'LATE':         {bg:'#ffeef0', color:'#c0392b', dot:'#e74c3c'},
+  'BLOCKED':      {bg:'#fff3cd', color:'#856404', dot:'#f0a500'},
+  'BLOCKED - LATE':{bg:'#fde8e8',color:'#7b1f1f', dot:'#c0392b'},
+};
+
+async function loadAtRiskTasks() {
+  const el = document.getElementById('tlist');
+  el.innerHTML = '<div style="padding:16px;font-size:11px;color:var(--text3);">Loading at-risk tasks…</div>';
+  try {
+    // Fetch via Cloudflare Worker /airtable-get route
+    const formula = encodeURIComponent("OR({STATUS Update}='LATE',{STATUS Update}='BLOCKED',{STATUS Update}='BLOCKED - LATE')");
+    const fields = encodeURIComponent('Task Name') + '&fields[]=' + encodeURIComponent('STATUS Update') + '&fields[]=' + encodeURIComponent('DIVISIONS') + '&fields[]=' + encodeURIComponent('Due Date');
+    const res = await fetch(`${PROXY}/airtable-get?base=${AB}&table=${ATBL}&filterByFormula=${formula}&fields[]=${fields}&sort[0][field]=DIVISIONS&sort[0][direction]=asc`);
+    const data = await res.json();
+    const records = data.records || [];
+
+    if (!records.length) {
+      el.innerHTML = '<div style="padding:16px;font-size:11px;color:var(--text3);">No at-risk tasks — all clear! ✓</div>';
+      document.getElementById('m-tasks').textContent = '0';
+      return;
+    }
+
+    document.getElementById('m-tasks').textContent = records.length;
+
+    // Group by DIVISIONS
+    const groups = {};
+    records.forEach(r => {
+      const div = r.fields['DIVISIONS'] || 'Unassigned';
+      if (!groups[div]) groups[div] = [];
+      groups[div].push(r);
+    });
+
+    el.innerHTML = Object.entries(groups).map(([div, items]) => `
+      <div class="tdiv-group">
+        <div class="tdiv-hdr">${div}</div>
+        ${items.map(r => {
+          const name = r.fields['Task Name'] || '—';
+          const status = r.fields['STATUS Update'] || '';
+          const due = r.fields['Due Date'] || '';
+          const sty = STATUS_STYLE[status] || {bg:'#f5f5f5',color:'#555',dot:'#999'};
+          const dueLabel = due ? new Date(due).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
+          return `<div class="titem">
+            <div class="tbody">
+              <div class="tname">${name}</div>
+              ${dueLabel ? `<div class="tmeta">${dueLabel}</div>` : ''}
+            </div>
+            <span class="tstatus" style="background:${sty.bg};color:${sty.color};border:none;">
+              <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${sty.dot};margin-right:4px;vertical-align:middle;"></span>${status}
+            </span>
+          </div>`;
+        }).join('')}
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="padding:16px;font-size:11px;color:var(--rust);">Error loading tasks: ${e.message}</div>`;
+  }
 }
-function stcls(s) {
-  if (s==='IN PROGRESS') return 's-ip';
-  if (s==='BLOCKED') return 's-bl';
-  if (s==='COMPLETE') return 's-co';
-  return 's-ns';
-}
-function renderTasks() {
-  document.getElementById('tlist').innerHTML = TASKS.map(t => {
-    const {label, cls} = getDue(t.due);
-    return `<div class="titem">
-      <div class="tdue-col"><span class="tdue ${cls}">${label}</span></div>
-      <div class="tbody"><div class="tname">${t.name}</div>${t.prog ? `<div class="tmeta">${t.prog}</div>` : ''}</div>
-      <span class="tstatus ${stcls(t.status)}">${t.status.replace('_',' ')}</span>
-    </div>`;
-  }).join('');
-}
+
+
 
 // ── NOTES ─────────────────────────────────────────────────
 let notes = [];
